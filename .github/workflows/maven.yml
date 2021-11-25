@@ -4,7 +4,7 @@ name: Build Imodec with Maven
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, test/ci ]
   pull_request:
     branches: [ dev ]
 
