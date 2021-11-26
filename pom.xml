@@ -5,14 +5,96 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>pt.ua.ieeta</groupId>
     <artifactId>imodec-dicoogle-plugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <name>imodec-dicoogle-plugin</name>
+    <version>3.0.2</version>
+    <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.source.encoding>UTF-8</project.build.source.encoding>
+
+        <!--    This plugin is directed to the following Dicoogle Version    -->
+        <dicoogle.version>3.0.2</dicoogle.version>
+
+        <!-- Jetty server version here -->
+        <jetty.version>9.4.2.v20170220</jetty.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>pt.ua.ieeta</groupId>
+            <artifactId>dicoogle-sdk</artifactId>
+            <version>${dicoogle.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-rewrite</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <!-- TODO: Add web UI plugin? https://github.com/rlebre/dicoogle-plugin-sample/tree/master/src/main/resources/webplugin-sample -->
+<!--            <resource></resource>-->
+        </resources>
+
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>dcm4che</id>
+            <url>https://www.dcm4che.org/maven2/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>mi</id>
+            <url>https://bioinformatics.ua.pt/maven/content/repositories/mi</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
+            <id>mi-snapshots</id>
+            <url>https://bioinformatics.ua.pt/maven/content/repositories/mi-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>
