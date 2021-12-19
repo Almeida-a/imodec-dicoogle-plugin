@@ -13,7 +13,7 @@
         <project.build.source.encoding>UTF-8</project.build.source.encoding>
 
         <!--    This plugin is directed to the following Dicoogle Version    -->
-        <dicoogle.version>3.0.2</dicoogle.version>
+        <dicoogle.version>3.0.5</dicoogle.version>
 
         <!-- Jetty server version here -->
         <jetty.version>9.4.2.v20170220</jetty.version>
