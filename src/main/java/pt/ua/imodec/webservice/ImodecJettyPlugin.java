@@ -70,7 +70,7 @@ public class ImodecJettyPlugin implements JettyPluginInterface, PlatformCommunic
 
     /**
      * Sets the servlets and their paths through which they are accessed.
-     *
+     * <p>
      * Example below to remind how the path is formed.
      * */
     @Override
@@ -78,9 +78,9 @@ public class ImodecJettyPlugin implements JettyPluginInterface, PlatformCommunic
 
         ServletContextHandler handler = new ServletContextHandler();
         handler.setContextPath("/imodec");
-        handler.addServlet(new ServletHolder(this.webService), "/hello");
+        handler.addServlet(new ServletHolder(this.webService), "/view");
         // Example: path to access this servlet? example below
-        // GET http://localhost:8080/imodec/hello?param=value
+        // GET http://localhost:8080/imodec/view?param=value
 
         HandlerList l = new HandlerList();
         l.addHandler(handler);

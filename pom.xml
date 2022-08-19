@@ -6,18 +6,19 @@
     <groupId>pt.ua.ieeta</groupId>
     <artifactId>imodec-dicoogle-plugin</artifactId>
     <name>imodec-dicoogle-plugin</name>
-    <!--  TODO update the version following dicoogle (always test before update) -->
-    <version>3.0.5</version>
+    <version>0.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.source.encoding>UTF-8</project.build.source.encoding>
 
         <!--    This plugin is directed to the following Dicoogle Version    -->
-        <dicoogle.version>3.0.5</dicoogle.version>
+        <dicoogle.version>3.1.0</dicoogle.version>
 
         <!-- Jetty server version here -->
-        <jetty.version>11.0.6</jetty.version>
+        <jetty.version>9.4.48.v20220622</jetty.version>
+
+        <dcm4che.version>5.23.3</dcm4che.version>
     </properties>
 
     <dependencies>
@@ -27,10 +28,17 @@
             <version>${dicoogle.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-rewrite -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-rewrite</artifactId>
             <version>${jetty.version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.dcm4che/dcm4che-core -->
+        <dependency>
+            <groupId>org.dcm4che</groupId>
+            <artifactId>dcm4che-core</artifactId>
+            <version>5.27.0</version>
         </dependency>
     </dependencies>
 

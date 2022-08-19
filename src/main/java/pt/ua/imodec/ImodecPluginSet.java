@@ -15,7 +15,8 @@ import java.util.Collections;
 
 /**
  *
- * Template based on https://github.com/Almeida-a/dicoogle-plugin-sample/blob/experimental/src/main/java/pt/ieeta/dicoogle/plugin/sample/SamplePluginSet.java
+ * Template based on <a href="https://github.com/Almeida-a/dicoogle-plugin-sample/blob/experimental/src/main/java/pt
+ * /ieeta/dicoogle/plugin/sample/SamplePluginSet.java">this</a>.
  *
  * This is the entry point for all plugins
  *
