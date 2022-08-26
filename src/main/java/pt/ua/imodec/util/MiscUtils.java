@@ -2,6 +2,7 @@ package pt.ua.imodec.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.WriteAbortedException;
 
 public class MiscUtils {
 
@@ -17,7 +18,8 @@ public class MiscUtils {
         File parentFile = file.getParentFile();
 
         if (!parentFile.exists())
-            return createNewFile(parentFile);
+            if (!parentFile.mkdirs())
+                throw new IOException(String.format("Unexpected error: Could not mkdir of dir '%s'.", parentFile));
 
         return file.createNewFile();
     }

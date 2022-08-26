@@ -83,7 +83,7 @@ public class ImageUtils {
 
     }
 
-    public static DicomObject encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat) throws IOException {
+    public static void encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat) throws IOException {
 
         logger.info("Encoding with recent formats...");
 
@@ -91,6 +91,8 @@ public class ImageUtils {
             throw new IllegalStateException(
                     String.format("Unsupported OS: '%s' for Imodec storage plugin", System.getProperty("os.name"))
             );
+
+        int rawImageByteSize = dicomObject.getBytes(Tag.PixelData).length;
 
         // Change dicom object from uncompressed to JPEG XL, WebP or AVIF format
         BufferedImage dicomImage = loadDicomImage(dicomObject);
@@ -102,11 +104,15 @@ public class ImageUtils {
         ImageIO.write(dicomImage, "png", tmpImageFile);
 
         byte[] bitstream = NewFormatsCodecs.encodePNGFile(tmpImageFile, chosenFormat);
+        int compressedImageByteSize = bitstream.length;
 
         // Adding the new data into the dicom object
         dicomObject.putBytes(Tag.PixelData, VR.OB, bitstream);
-        // TODO change parameters other than pixel-data (lossy compression, transfer syntax, ...)
+        // Change parameters other than pixel-data (lossy compression, transfer syntax, ...)
+        dicomObject.putString(Tag.TransferSyntaxUID, VR.UI, chosenFormat.getTransferSyntax().uid());
+        dicomObject.putString(Tag.LossyImageCompression, VR.CS, "01");
+        dicomObject.putString(Tag.LossyImageCompressionRatio, VR.DS, String.valueOf(rawImageByteSize / compressedImageByteSize));
+        dicomObject.putString(Tag.LossyImageCompressionMethod, VR.CS, chosenFormat.getMethod());
 
-        return dicomObject;
     }
 }
