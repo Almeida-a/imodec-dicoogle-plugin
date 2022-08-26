@@ -7,7 +7,7 @@ import pt.ua.dicoogle.sdk.QueryInterface;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.dicoogle.sdk.datastructs.SearchResult;
-import pt.ua.imodec.ImageUtils;
+import pt.ua.imodec.util.ImageUtils;
 
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServlet;
