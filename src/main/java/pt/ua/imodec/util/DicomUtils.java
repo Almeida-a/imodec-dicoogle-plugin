@@ -22,7 +22,7 @@ public class DicomUtils {
     public static boolean saveDicomFile(DicomObject dicomObject, File dicomFile, boolean temporary) throws IOException {
 
         if (dicomFile.exists()) {
-            logger.error("File '' " + dicomFile.getAbsolutePath() + "' already exists!");
+            logger.error("File '" + dicomFile.getAbsolutePath() + "' already exists!");
             return false;
         }
 

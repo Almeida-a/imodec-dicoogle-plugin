@@ -46,9 +46,17 @@ public class NewFormatsCodecs {
 
         String encodingCommand = getCodecCommand(inputFilePath, encodedFileName, formatExtension, true);
 
-        Runtime.getRuntime().exec(encodingCommand);
+        // Execute the command and wait for it to finish
+        Process compression = Runtime.getRuntime().exec(encodingCommand);
+        try {
+            compression.waitFor();
+        } catch (InterruptedException ignored) {}
 
         File encodedImageFile = new File(encodedFileName);
+        if (!encodedImageFile.exists())
+            throw new IllegalStateException("Encoded image file should be present!");
+
+        encodedImageFile.deleteOnExit();
 
         return Files.readAllBytes(encodedImageFile.toPath());
     }

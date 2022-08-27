@@ -69,6 +69,13 @@ public class ImodecStoragePlugin implements StorageInterface {
     public URI store(DicomObject dicomObject, Object... objects) {
 
         // TODO include a way to choose which format to encode with
+        // ...
+
+        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
+        if (mem.containsKey(uri.toString())) {
+            logger.warn("This object was already stored!");
+            return uri;
+        }
 
         try {
             ImageUtils.encodeDicomObject(dicomObject, NewFormat.JPEG_XL);
@@ -84,7 +91,6 @@ public class ImodecStoragePlugin implements StorageInterface {
             logger.warn("Failed to store object", ex);
         }
         bos.toByteArray();
-        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
         mem.put(uri.toString(), bos);
 
         return uri;
