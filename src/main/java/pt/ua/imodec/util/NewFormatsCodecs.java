@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class NewFormatsCodecs {
 
@@ -74,6 +76,12 @@ public class NewFormatsCodecs {
             codecId = 'd';
 
         return String.format("%c%s %s %s", codecId, formatExtension, inputPath, outputPath);
+    }
+
+    public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
+        String encodedFileName = String.format("/tmp/imodec/%s", Arrays.hashCode(bitstream) + chosenFormat.getFileExtension());
+        Files.write(Paths.get(encodedFileName), bitstream);
+        return decode(encodedFileName, chosenFormat.getFileExtension());
     }
 
     private static BufferedImage decode(String inputFilePath, String formatExtension) throws IOException {
