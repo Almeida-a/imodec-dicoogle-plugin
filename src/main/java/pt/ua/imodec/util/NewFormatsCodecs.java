@@ -82,7 +82,11 @@ public class NewFormatsCodecs {
 
         String decodingCommand = getCodecCommand(inputFilePath, decodedFileName, formatExtension, false);
 
-        Runtime.getRuntime().exec(decodingCommand);
+        Process decompression = Runtime.getRuntime().exec(decodingCommand);
+
+        try {
+            decompression.waitFor();
+        } catch (InterruptedException ignored) {}
 
         File decodedImageFile = new File(decodedFileName);
 
