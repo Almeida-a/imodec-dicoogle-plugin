@@ -1,6 +1,7 @@
 package pt.ua.imodec.storage;
 
 import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;
 import org.dcm4che2.io.DicomOutputStream;
 import org.slf4j.Logger;
@@ -8,20 +9,20 @@ import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
+import pt.ua.imodec.util.ImageUtils;
+import pt.ua.imodec.util.NewFormat;
 
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.UUID;
 
 /**
  *
  * Basic Storage Plugin
  *  - "Template" from rlebre/dicoogle-plugin-sample
- *  - TODO add the compression features
- *
+ * <p>
  * */
 public class ImodecStoragePlugin implements StorageInterface {
 
@@ -33,7 +34,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getScheme() {
-        return "mem://";
+        return "imodec-mem";
     }
 
     @Override
@@ -50,6 +51,7 @@ public class ImodecStoragePlugin implements StorageInterface {
                 @Override
                 public InputStream getInputStream() {
                     ByteArrayOutputStream bos = mem.get(location.toString());
+
                     return new ByteArrayInputStream(bos.toByteArray());
                 }
 
@@ -66,6 +68,21 @@ public class ImodecStoragePlugin implements StorageInterface {
     @Override
     public URI store(DicomObject dicomObject, Object... objects) {
 
+        // TODO include a way to choose which format to encode with
+        // ...
+
+        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
+        if (mem.containsKey(uri.toString())) {
+            logger.warn("This object was already stored!");
+            return uri;
+        }
+
+        try {
+            ImageUtils.encodeDicomObject(dicomObject, NewFormat.JPEG_XL);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DicomOutputStream dos = new DicomOutputStream(bos);
         try {
@@ -74,7 +91,6 @@ public class ImodecStoragePlugin implements StorageInterface {
             logger.warn("Failed to store object", ex);
         }
         bos.toByteArray();
-        URI uri = URI.create("mem://" + UUID.randomUUID());
         mem.put(uri.toString(), bos);
 
         return uri;
@@ -82,10 +98,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public URI store(DicomInputStream dicomInputStream, Object... objects) throws IOException {
-
-        DicomObject obj = dicomInputStream.readDicomObject();
-
-        return store(obj);
+        return store(dicomInputStream.readDicomObject());
     }
 
     @Override

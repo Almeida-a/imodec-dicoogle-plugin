@@ -44,8 +44,6 @@
 
     <build>
         <resources>
-            <!-- TODO: Add web UI plugin? https://github.com/rlebre/dicoogle-plugin-sample/tree/master/src/main/resources/webplugin-sample -->
-<!--            <resource></resource>-->
         </resources>
 
         <plugins>
