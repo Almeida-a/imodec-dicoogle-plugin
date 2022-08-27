@@ -4,16 +4,17 @@ import org.dcm4che2.data.TransferSyntax;
 
 public enum NewFormat {
 
-    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181"),
-    WEBP(NewFormatsTS.WEBP_TS, "webp"),
-    AVIF(NewFormatsTS.AVIF, "avif");
+    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181", "jxl"),
+    WEBP(NewFormatsTS.WEBP_TS, "webp", "webp"),
+    AVIF(NewFormatsTS.AVIF, "avif", "avif");
 
     private final TransferSyntax transferSyntax;
-    private final String method;
+    private final String method, fileExtension;
 
-    NewFormat(TransferSyntax transferSyntax, String method) {
+    NewFormat(TransferSyntax transferSyntax, String method, String fileExtension) {
         this.transferSyntax = transferSyntax;
         this.method = method;
+        this.fileExtension = fileExtension;
     }
 
     public TransferSyntax getTransferSyntax() {
@@ -22,6 +23,10 @@ public enum NewFormat {
 
     public String getMethod() {
         return method;
+    }
+
+    public String getFileExtension() {
+        return fileExtension;
     }
 
     private static class NewFormatsTS {

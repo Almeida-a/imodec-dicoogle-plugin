@@ -1,10 +1,14 @@
 package pt.ua.imodec.util;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
 public class NewFormatsCodecs {
+
+    private static final String losslessFormat = "png";
     public static byte[] encodePNGFile(File tmpImageFile, NewFormat chosenFormat) throws IOException {
 
         // Input validation
@@ -36,23 +40,46 @@ public class NewFormatsCodecs {
         }
     }
 
-    private static byte[] encode(String tmpFilePath, String formatExtension) throws IOException {
+    private static byte[] encode(String inputFilePath, String formatExtension) throws IOException {
 
-        String encodedFileName = tmpFilePath.replace("png", formatExtension);
+        String encodedFileName = inputFilePath.replace("png", formatExtension);
 
-        String compressCommand = getEncodingCommand(tmpFilePath, encodedFileName, formatExtension);
+        String encodingCommand = getCodecCommand(inputFilePath, encodedFileName, formatExtension, true);
 
-        Runtime.getRuntime().exec(compressCommand);
+        Runtime.getRuntime().exec(encodingCommand);
 
-        File encodedImage = new File(encodedFileName);
+        File encodedImageFile = new File(encodedFileName);
 
-        return Files.readAllBytes(encodedImage.toPath());
+        return Files.readAllBytes(encodedImageFile.toPath());
     }
 
-    private static String getEncodingCommand(String inputPath, String encodedFileName, String formatExtension) {
-        assert new File(inputPath).exists(): "Input path for command does not exist!";
-        assert !(new File(encodedFileName).exists()): "Encoded file name already exists!";
+    private static String getCodecCommand(String inputPath, String outputPath,
+                                          String formatExtension, boolean encoding) {
+        assert new File(inputPath).exists(): "Input file does not exist!";
+        assert !(new File(outputPath).exists()): "Output file already exists!";
 
-        return String.format("c%s %s %s", formatExtension, inputPath, encodedFileName);
+        char codecId;
+
+        if (encoding)
+            codecId = 'c';
+        else
+            codecId = 'd';
+
+        return String.format("%c%s %s %s", codecId, formatExtension, inputPath, outputPath);
     }
+
+    private static BufferedImage decode(String inputFilePath, String formatExtension) throws IOException {
+
+        String decodedFileName = inputFilePath.replace(formatExtension, losslessFormat);
+
+        String decodingCommand = getCodecCommand(inputFilePath, decodedFileName, formatExtension, false);
+
+        Runtime.getRuntime().exec(decodingCommand);
+
+        File decodedImageFile = new File(decodedFileName);
+
+        return ImageIO.read(decodedImageFile);  // TODO make sure this really works
+
+    }
+
 }
