@@ -79,7 +79,7 @@ public class NewFormatsCodecs {
     }
 
     public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
-        String encodedFileName = String.format("/tmp/imodec/%s", Arrays.hashCode(bitstream) + chosenFormat.getFileExtension());
+        String encodedFileName = String.format("/tmp/imodec/%s.%s", Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
         Files.write(Paths.get(encodedFileName), bitstream);
         return decode(encodedFileName, chosenFormat.getFileExtension());
     }
@@ -98,7 +98,7 @@ public class NewFormatsCodecs {
 
         File decodedImageFile = new File(decodedFileName);
 
-        return ImageIO.read(decodedImageFile);  // TODO make sure this really works
+        return ImageIO.read(decodedImageFile);
 
     }
 

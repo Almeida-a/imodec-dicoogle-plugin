@@ -38,7 +38,7 @@ public class ImodecJettyPlugin implements JettyPluginInterface, PlatformCommunic
 
     @Override
     public String getName() {
-        return "plugin-jetty";
+        return "imodec-viewer";
     }
 
     @Override

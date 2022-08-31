@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 
 /**
  *
@@ -51,6 +52,11 @@ public class ImodecStoragePlugin implements StorageInterface {
                 @Override
                 public InputStream getInputStream() {
                     ByteArrayOutputStream bos = mem.get(location.toString());
+
+                    if (bos == null)
+                        throw new NoSuchElementException(
+                                String.format("File uri='%s' was not found at the storage!", location)
+                        );
 
                     return new ByteArrayInputStream(bos.toByteArray());
                 }
@@ -108,7 +114,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getName() {
-        return "imodec-plugin-storage";
+        return "imodec-storage";
     }
 
     @Override

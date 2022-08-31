@@ -21,13 +21,13 @@ public class DicomUtils {
      */
     public static boolean saveDicomFile(DicomObject dicomObject, File dicomFile, boolean temporary) throws IOException {
 
-        if (dicomFile.exists()) {
-            logger.error("File '" + dicomFile.getAbsolutePath() + "' already exists!");
-            return false;
-        }
+        if (dicomFile.exists())
+            logger.warn("File '" + dicomFile.getAbsolutePath() + "' already exists! Overwriting");
 
-        if (!MiscUtils.createNewFile(dicomFile))
-            logger.warn(String.format("Could not create temporary file: '%s'", dicomFile));
+        if (!MiscUtils.createNewFile(dicomFile, true))
+            throw new IllegalStateException(
+                    String.format("Could not create temporary file: '%s'", dicomFile)
+            );
 
         if (temporary)
             dicomFile.deleteOnExit();

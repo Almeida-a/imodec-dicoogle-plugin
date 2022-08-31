@@ -4,12 +4,15 @@ import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.data.TransferSyntax;
 import org.dcm4che2.io.DicomInputStream;
+import org.dcm4che2.io.DicomOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.QueryInterface;
+import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.dicoogle.sdk.datastructs.SearchResult;
+import pt.ua.imodec.storage.ImodecStoragePlugin;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.NewFormat;
 import pt.ua.imodec.util.NewFormatsCodecs;
@@ -32,6 +35,8 @@ import java.util.stream.Collectors;
 
 public class ImodecJettyWebService extends HttpServlet implements PlatformCommunicatorInterface {
     private static final Logger logger = LoggerFactory.getLogger(ImodecJettyWebService.class);
+    private static final String sopInstanceUIDParameterName = "siuid";
+    public static final String storageScheme = new ImodecStoragePlugin().getScheme();
 
     private DicooglePlatformInterface platform;
 
@@ -49,8 +54,8 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
-        DicomInputStream dicomInputStream = extractRequestedDicom(request);
-        DicomObject dicomObject = extractRequestedDicom(request).readDicomObject();
+        DicomInputStream dicomInputStream = extractRequestedDicomFromStorage(request);
+        DicomObject dicomObject = extractRequestedDicomFromStorage(request).readDicomObject();
 
         response.setContentType("image/png");
 
@@ -95,9 +100,21 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
     }
 
-    private DicomInputStream extractRequestedDicom(HttpServletRequest request) throws IOException {
+    private DicomInputStream extractRequestedDicomFromStorage(HttpServletRequest request) throws IOException {
+        String sopInstanceUID = request.getParameter(sopInstanceUIDParameterName);
 
-        // TODO: 27/08/22 How to retrieve dicom files that were sent by a store-scu operation?
+        URI uri = URI.create(storageScheme + "://" + sopInstanceUID);
+
+        Iterable<StorageInputStream> files = this.platform.getStorageForSchema(uri).at(uri);
+
+        Iterator<StorageInputStream> storageInputStreamIterator = files.iterator();
+
+        InputStream inputStream = storageInputStreamIterator.next().getInputStream();
+
+        return new DicomInputStream(inputStream);
+    }
+
+    private DicomInputStream extractRequestedDicomFromIndex(HttpServletRequest request) throws IOException {
 
         String SOPInstanceUID = request.getParameter("uid");
 

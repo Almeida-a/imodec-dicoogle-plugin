@@ -50,7 +50,7 @@ public class ImodecPluginSet implements PluginSet {
 
     @Override
     public String getName() {
-        return "Imodec plugin set";
+        return "imodec-plugin-set";
     }
 
     @Override
