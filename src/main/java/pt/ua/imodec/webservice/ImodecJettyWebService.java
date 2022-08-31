@@ -71,7 +71,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
         BufferedImage dicomImage;
         String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
 
-        if (newFormatListTsUids.contains(tsUID)) {
+        if (newFormatListTsUids.contains(tsUID)) {// Case recent formats
             // Parse format uid into format id
             NewFormat chosenFormat = newFormatList
                     .stream()

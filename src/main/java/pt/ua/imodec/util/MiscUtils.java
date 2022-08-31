@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.WriteAbortedException;
+import java.util.function.Supplier;
 
 public class MiscUtils {
 
@@ -32,4 +33,13 @@ public class MiscUtils {
         return file.createNewFile();
     }
 
+    public static void sleepWhile(Supplier<Boolean> booleanSupplier) {
+        while (booleanSupplier.get()) {
+            try {
+                Thread.sleep(100L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 }
