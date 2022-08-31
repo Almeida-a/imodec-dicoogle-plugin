@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>pt.ua.ieeta</groupId>
-    <artifactId>imodec-dicoogle-plugin</artifactId>
-    <name>imodec-dicoogle-plugin</name>
+    <artifactId>imodec-dicoogle-plugin-set</artifactId>
+    <name>imodec-dicoogle-plugin-set</name>
     <version>0.0.0</version>
     <packaging>jar</packaging>
 

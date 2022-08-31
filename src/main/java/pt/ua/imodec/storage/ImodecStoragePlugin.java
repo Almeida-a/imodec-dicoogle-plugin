@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
+import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.ImageUtils;
+import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.NewFormat;
 
 import java.io.*;
@@ -17,6 +19,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 /**
  *
@@ -52,6 +56,11 @@ public class ImodecStoragePlugin implements StorageInterface {
                 public InputStream getInputStream() {
                     ByteArrayOutputStream bos = mem.get(location.toString());
 
+                    if (bos == null)
+                        throw new NoSuchElementException(
+                                String.format("File uri='%s' was not found at the storage!", location)
+                        );
+
                     return new ByteArrayInputStream(bos.toByteArray());
                 }
 
@@ -68,8 +77,11 @@ public class ImodecStoragePlugin implements StorageInterface {
     @Override
     public URI store(DicomObject dicomObject, Object... objects) {
 
-        // TODO include a way to choose which format to encode with
-        // ...
+        logger.warn("Waiting while format is being set");
+
+        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
+        MiscUtils.sleepWhile(choosingProcess);
+        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
 
         URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
         if (mem.containsKey(uri.toString())) {
@@ -78,7 +90,7 @@ public class ImodecStoragePlugin implements StorageInterface {
         }
 
         try {
-            ImageUtils.encodeDicomObject(dicomObject, NewFormat.JPEG_XL);
+            ImageUtils.encodeDicomObject(dicomObject, chosenFormat);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -108,7 +120,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getName() {
-        return "imodec-plugin-storage";
+        return "imodec-storage";
     }
 
     @Override

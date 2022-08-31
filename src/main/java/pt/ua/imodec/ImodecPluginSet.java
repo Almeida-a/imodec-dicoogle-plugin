@@ -8,8 +8,10 @@ import pt.ua.dicoogle.sdk.PluginSet;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
+import pt.ua.imodec.util.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -17,7 +19,7 @@ import java.util.Collections;
  *
  * Template based on <a href="https://github.com/Almeida-a/dicoogle-plugin-sample/blob/experimental/src/main/java/pt
  * /ieeta/dicoogle/plugin/sample/SamplePluginSet.java">this</a>.
- *
+ * <p>
  * This is the entry point for all plugins
  *
  *  @author Luís A. Bastião Silva - <bastiao@ua.pt>
@@ -36,21 +38,19 @@ public class ImodecPluginSet implements PluginSet {
     private final ImodecStoragePlugin storage;
 
     // Additional resources
-    // ...
+    public static NewFormat chosenFormat = null;
     private ConfigurationHolder settings;
 
     public ImodecPluginSet() {
-        logger.info("Initializing Imodec Plugin Set");
-
         this.jettyWeb = new ImodecJettyPlugin();
         this.storage = new ImodecStoragePlugin();
 
-        logger.info("Sample Plugin Set is ready");
+        logger.info("Imodec Plugin Set is ready");
     }
 
     @Override
     public String getName() {
-        return "Imodec plugin set";
+        return "imodec-plugin-set";
     }
 
     @Override
@@ -65,7 +65,27 @@ public class ImodecPluginSet implements PluginSet {
 
     @Override
     public void setSettings(ConfigurationHolder xmlSettings) {
+
+        if (chosenFormat == null)
+            setImageCompressionFormat(xmlSettings);
+
         this.settings = xmlSettings;
+    }
+
+    private static void setImageCompressionFormat(ConfigurationHolder xmlSettings) {
+        NewFormat defaultFormat = NewFormat.JPEG_XL;
+
+        String chosenFormatExtension = xmlSettings.getConfiguration().getString("codec");
+
+        chosenFormat = Arrays.stream(NewFormat.values())
+                .filter(newFormat -> newFormat.getFileExtension().equals(chosenFormatExtension))
+                .findFirst()
+                .orElse(defaultFormat);
+
+        logger.info(
+                String.format("Format requested: '%s', set -> '%s'",
+                        chosenFormatExtension, chosenFormat.getFileExtension())
+        );
     }
 
     @Override

@@ -16,7 +16,6 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.Iterator;
 
 public class ImageUtils {
@@ -48,12 +47,13 @@ public class ImageUtils {
 
     public static BufferedImage loadDicomImage(DicomObject dicomObject) throws IOException {
 
-        String tmpDicomFileName = String.format("/tmp/imodec/ImageUtils/%d.dcm", dicomObject.hashCode());
+        String tmpDicomFileName = String.format("/tmp/imodec/ImageUtils/%s.dcm",
+                dicomObject.getString(Tag.SOPInstanceUID));
         File tmpDicomFile = new File(tmpDicomFileName);
         tmpDicomFile.deleteOnExit();
 
         if (!DicomUtils.saveDicomFile(dicomObject, tmpDicomFile, true)) {
-            throw new FileAlreadyExistsException("Hash collision in creating the tmp file");
+            logger.warn("Hash collision in creating the tmp file. Overwriting...");
         }
 
         DicomInputStream dicomInputStream = new DicomInputStream(tmpDicomFile);

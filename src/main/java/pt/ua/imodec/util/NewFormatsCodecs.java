@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class NewFormatsCodecs {
 
@@ -53,8 +55,6 @@ public class NewFormatsCodecs {
         } catch (InterruptedException ignored) {}
 
         File encodedImageFile = new File(encodedFileName);
-        if (!encodedImageFile.exists())
-            throw new IllegalStateException("Encoded image file should be present!");
 
         encodedImageFile.deleteOnExit();
 
@@ -73,7 +73,21 @@ public class NewFormatsCodecs {
         else
             codecId = 'd';
 
-        return String.format("%c%s %s %s", codecId, formatExtension, inputPath, outputPath);
+        String outputPrefix = "-o";
+
+        if (formatExtension.equals(NewFormat.JPEG_XL.getFileExtension()))
+            outputPrefix = "";
+
+        if (!encoding && formatExtension.equals(NewFormat.AVIF.getFileExtension()))
+            return String.format("avif_decode %s %s", inputPath, outputPath);
+
+        return String.format("%c%s %s %s %s", codecId, formatExtension, inputPath, outputPrefix, outputPath);
+    }
+
+    public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
+        String encodedFileName = String.format("/tmp/imodec/%s.%s", Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
+        Files.write(Paths.get(encodedFileName), bitstream);
+        return decode(encodedFileName, chosenFormat.getFileExtension());
     }
 
     private static BufferedImage decode(String inputFilePath, String formatExtension) throws IOException {
@@ -90,7 +104,7 @@ public class NewFormatsCodecs {
 
         File decodedImageFile = new File(decodedFileName);
 
-        return ImageIO.read(decodedImageFile);  // TODO make sure this really works
+        return ImageIO.read(decodedImageFile);
 
     }
 
