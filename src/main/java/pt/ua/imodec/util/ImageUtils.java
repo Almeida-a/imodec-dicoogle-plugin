@@ -16,6 +16,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 
 public class ImageUtils {
@@ -83,7 +84,8 @@ public class ImageUtils {
 
     }
 
-    public static void encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat) throws IOException {
+    public static void encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat,
+                                         HashMap<String, Number> options) throws IOException {
 
         logger.info("Encoding with recent formats...");
 
@@ -103,7 +105,7 @@ public class ImageUtils {
 
         ImageIO.write(dicomImage, "png", tmpImageFile);
 
-        byte[] bitstream = NewFormatsCodecs.encodePNGFile(tmpImageFile, chosenFormat);
+        byte[] bitstream = NewFormatsCodecs.encodePNGFile(tmpImageFile, chosenFormat, options);
         int compressedImageByteSize = bitstream.length;
 
         // Adding the new data into the dicom object

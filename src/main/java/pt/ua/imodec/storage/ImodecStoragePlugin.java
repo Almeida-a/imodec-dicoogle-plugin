@@ -77,11 +77,6 @@ public class ImodecStoragePlugin implements StorageInterface {
     @Override
     public URI store(DicomObject dicomObject, Object... objects) {
 
-        logger.warn("Waiting while format is being set");
-
-        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
-        MiscUtils.sleepWhile(choosingProcess);
-        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
 
         URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
         if (mem.containsKey(uri.toString())) {
@@ -89,8 +84,17 @@ public class ImodecStoragePlugin implements StorageInterface {
             return uri;
         }
 
+        logger.info("Waiting while format is being set");
+
+        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
+        MiscUtils.sleepWhile(choosingProcess);
+        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
+
         try {
-            ImageUtils.encodeDicomObject(dicomObject, chosenFormat);
+            HashMap<String, Number> options = new HashMap<>();
+            options.put("distance", 1.0f);
+            options.put("effort", 7);
+            ImageUtils.encodeDicomObject(dicomObject, chosenFormat, options);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

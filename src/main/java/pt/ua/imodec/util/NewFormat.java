@@ -4,17 +4,28 @@ import org.dcm4che2.data.TransferSyntax;
 
 public enum NewFormat {
 
-    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181", "jxl"),
-    WEBP(NewFormatsTS.WEBP_TS, "webp", "webp"),
-    AVIF(NewFormatsTS.AVIF, "avif", "avif");
+    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181", "jxl", 1.0f, 7),
+    WEBP(NewFormatsTS.WEBP_TS, "webp", "webp", 75, 4),
+    AVIF(NewFormatsTS.AVIF_TS, "avif", "avif", 80, 4);
 
     private final TransferSyntax transferSyntax;
     private final String method, fileExtension;
+    private final Number defaultQualityParamValue, defaultSpeedParamValue;
 
-    NewFormat(TransferSyntax transferSyntax, String method, String fileExtension) {
+    public Number getDefaultQualityParamValue() {
+        return defaultQualityParamValue;
+    }
+
+    public Number getDefaultSpeedParamValue() {
+        return defaultSpeedParamValue;
+    }
+
+    NewFormat(TransferSyntax transferSyntax, String method, String fileExtension, Number defaultQualityParamValue, Number defaultSpeedParamValue) {
         this.transferSyntax = transferSyntax;
         this.method = method;
         this.fileExtension = fileExtension;
+        this.defaultQualityParamValue = defaultQualityParamValue;
+        this.defaultSpeedParamValue = defaultSpeedParamValue;
     }
 
     public TransferSyntax getTransferSyntax() {
@@ -43,7 +54,7 @@ public enum NewFormat {
         public static final TransferSyntax WEBP_TS = new TransferSyntax(WEBP_TS_UID,
                 false, false, true, false);
 
-        public static final TransferSyntax AVIF = new TransferSyntax(AVIF_TS_UID,
+        public static final TransferSyntax AVIF_TS = new TransferSyntax(AVIF_TS_UID,
                 false, false, true, false);
 
     }
