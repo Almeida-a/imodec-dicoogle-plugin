@@ -10,6 +10,7 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
+import pt.ua.imodec.util.Format;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.NewFormat;
@@ -24,7 +25,7 @@ import java.util.function.Supplier;
 
 /**
  *
- * Basic Storage Plugin
+ * Storage Plugin
  *  - "Template" from rlebre/dicoogle-plugin-sample
  * <p>
  * */
@@ -81,7 +82,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
         Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
         MiscUtils.sleepWhile(choosingProcess);
-        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
 
         URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
         if (mem.containsKey(uri.toString())) {
@@ -90,7 +91,8 @@ public class ImodecStoragePlugin implements StorageInterface {
         }
 
         try {
-            ImageUtils.encodeDicomObject(dicomObject, chosenFormat);
+            if (chosenFormat instanceof NewFormat)
+                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -120,7 +122,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getName() {
-        return "imodec-storage";
+        return "imodec-storage-plugin";
     }
 
     @Override

@@ -8,6 +8,8 @@ import pt.ua.dicoogle.sdk.PluginSet;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
+import pt.ua.imodec.util.Format;
+import pt.ua.imodec.util.Native;
 import pt.ua.imodec.util.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
@@ -38,7 +40,7 @@ public class ImodecPluginSet implements PluginSet {
     private final ImodecStoragePlugin storage;
 
     // Additional resources
-    public static NewFormat chosenFormat = null;
+    public static Format chosenFormat = null;
     private ConfigurationHolder settings;
 
     public ImodecPluginSet() {
@@ -73,18 +75,19 @@ public class ImodecPluginSet implements PluginSet {
     }
 
     private static void setImageCompressionFormat(ConfigurationHolder xmlSettings) {
-        NewFormat defaultFormat = NewFormat.JPEG_XL;
 
-        String chosenFormatExtension = xmlSettings.getConfiguration().getString("codec");
+        Format defaultFormat = Native.UNCHANGED;
 
-        chosenFormat = Arrays.stream(NewFormat.values())
-                .filter(newFormat -> newFormat.getFileExtension().equals(chosenFormatExtension))
+        String chosenFormatId = xmlSettings.getConfiguration().getString("codec");
+
+        chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
+                .filter(newFormat -> newFormat.getId().equals(chosenFormatId))
                 .findFirst()
                 .orElse(defaultFormat);
 
         logger.info(
                 String.format("Format requested: '%s', set -> '%s'",
-                        chosenFormatExtension, chosenFormat.getFileExtension())
+                        chosenFormatId, chosenFormat.getId())
         );
     }
 
