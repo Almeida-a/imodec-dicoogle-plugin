@@ -10,10 +10,10 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.Format;
+import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
-import pt.ua.imodec.util.NewFormat;
+import pt.ua.imodec.util.formats.NewFormat;
 
 import java.io.*;
 import java.net.URI;

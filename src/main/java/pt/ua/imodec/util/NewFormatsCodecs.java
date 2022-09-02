@@ -1,5 +1,7 @@
 package pt.ua.imodec.util;
 
+import pt.ua.imodec.util.formats.NewFormat;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;

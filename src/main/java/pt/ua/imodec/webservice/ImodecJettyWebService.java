@@ -4,7 +4,6 @@ import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.data.TransferSyntax;
 import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.DicomOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.QueryInterface;
@@ -14,7 +13,7 @@ import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.dicoogle.sdk.datastructs.SearchResult;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
 import pt.ua.imodec.util.ImageUtils;
-import pt.ua.imodec.util.NewFormat;
+import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.util.NewFormatsCodecs;
 
 import javax.imageio.ImageIO;

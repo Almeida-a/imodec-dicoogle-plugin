@@ -6,6 +6,7 @@ import org.dcm4che2.data.VR;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.util.validators.OSValidator;
 
 import javax.imageio.ImageIO;
