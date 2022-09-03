@@ -92,6 +92,6 @@ In order to check the stored images, you need to
 input an url to your browser with the
 SOP Instance UID of the respective dicom object,
 following the next example:
-```
-http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347
+```http request
+http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347&tsuid=1.2.826.0.1.3680043.2.682.104.1
 ```

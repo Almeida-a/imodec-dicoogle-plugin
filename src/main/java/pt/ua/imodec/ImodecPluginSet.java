@@ -1,6 +1,7 @@
 package pt.ua.imodec;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import org.dcm4che2.data.TransferSyntax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.JettyPluginInterface;
@@ -80,10 +81,23 @@ public class ImodecPluginSet implements PluginSet {
 
         String chosenFormatId = xmlSettings.getConfiguration().getString("codec");
 
-        chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
-                .filter(newFormat -> newFormat.getId().equals(chosenFormatId))
-                .findFirst()
-                .orElse(defaultFormat);
+        if (chosenFormatId.equals("all")) {
+            chosenFormat = new Format() {
+                @Override
+                public TransferSyntax getTransferSyntax() {
+                    return null;
+                }
+
+                @Override
+                public String getId() {
+                    return "all";
+                }
+            };
+        } else
+            chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
+                    .filter(newFormat -> newFormat.getId().equals(chosenFormatId))
+                    .findFirst()
+                    .orElse(defaultFormat);
 
         logger.info(
                 String.format("Format requested: '%s', set -> '%s'",

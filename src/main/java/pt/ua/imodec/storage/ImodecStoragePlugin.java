@@ -10,12 +10,15 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
+import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.formats.NewFormat;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,15 +87,23 @@ public class ImodecStoragePlugin implements StorageInterface {
         MiscUtils.sleepWhile(choosingProcess);
         Format chosenFormat = ImodecPluginSet.chosenFormat;
 
-        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
+        URI uri = getUri(dicomObject);
         if (mem.containsKey(uri.toString())) {
             logger.warn("This object was already stored!");
             return uri;
         }
 
         try {
-            if (chosenFormat instanceof NewFormat)
+            if (chosenFormat instanceof NewFormat) {
                 ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat);
+            }
+            else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+                // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
+                DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
+                for (DicomObject dicomObject1 : dicomObjects) {
+                    store(dicomObject1, new Object());
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -108,6 +119,12 @@ public class ImodecStoragePlugin implements StorageInterface {
         mem.put(uri.toString(), bos);
 
         return uri;
+    }
+
+    private URI getUri(DicomObject dicomObject) {
+        return URI.create(getScheme() + "://"
+                + dicomObject.getString(Tag.SOPInstanceUID) + "/"
+                + dicomObject.getString(Tag.TransferSyntaxUID));
     }
 
     @Override

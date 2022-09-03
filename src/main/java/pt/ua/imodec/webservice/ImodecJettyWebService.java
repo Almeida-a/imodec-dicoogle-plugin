@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 public class ImodecJettyWebService extends HttpServlet implements PlatformCommunicatorInterface {
     private static final Logger logger = LoggerFactory.getLogger(ImodecJettyWebService.class);
     private static final String sopInstanceUIDParameterName = "siuid";
+    private static final String transferSyntaxUIDParameterName = "tsuid";
     public static final String storageScheme = new ImodecStoragePlugin().getScheme();
 
     private DicooglePlatformInterface platform;
@@ -99,10 +100,18 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
     }
 
+    /**
+     * Analyzes the request and returns the associated dicom object
+     *
+     * @param request
+     * @return
+     * @throws IOException
+     */
     private DicomInputStream extractRequestedDicomFromStorage(HttpServletRequest request) throws IOException {
-        String sopInstanceUID = request.getParameter(sopInstanceUIDParameterName);
+        String sopInstanceUID = request.getParameter(sopInstanceUIDParameterName),
+                transferSyntaxUID = request.getParameter(transferSyntaxUIDParameterName);
 
-        URI uri = URI.create(storageScheme + "://" + sopInstanceUID);
+        URI uri = URI.create(storageScheme + "://" + sopInstanceUID + "/" + transferSyntaxUID);
 
         Iterable<StorageInputStream> files = this.platform.getStorageForSchema(uri).at(uri);
 
