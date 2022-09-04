@@ -3,6 +3,17 @@ Imodec (Image [Modern] Codecs) is a set of plugins
 for the [Dicoogle](https://github.com/bioinformatics-ua/dicoogle/)
 project providing the services of modern image compression codecs.
 
+## Table of contents
+1. [Building from source](#building-from-source)
+2. [How to use](#how-to-use)
+   1. [Pre-requisites](#pre-requisites)
+   2. [Plugging into dicoogle](#plugging-into-dicoogle)
+   3. [Store-SCU operation](#store-scu-operation)
+      1. [storescu - dcmtk](#storescu---dcmtk)
+      2. [dicom-storescu - dicom-rs](#dicom-storescu---dicom-rs)
+3. [Other Notes](#other-notes)
+   1. [New transfer syntaxes](#new-transfer-syntaxes)
+
 ## Building from source
 If you want, you can build from source using the `mvn`
 building tool.
