@@ -93,5 +93,33 @@ input an url to your browser with the
 SOP Instance UID of the respective dicom object,
 following the next example:
 ```http request
-http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347&tsuid=1.2.826.0.1.3680043.2.682.104.1
+http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347&codec=jxl
 ```
+
+#### Http request structure
+Base url:
+```http request
+http://localhost:8080/imodec/view
+```
+
+Parameters:
+ * `siuid` [Required]: SOP Instance UID of the dicom object's image to be viewed.
+ * `tsuid` [Optional]: Transfer Syntax UID defining a version of the dicom object in a specific format.
+ * `codec` [Optional]: If you want to see the image of a specific modern format, choose here which format that 
+you want to see. This is the same as choosing the [transfer syntax](#new-transfer-syntaxes) of that specific codec with the
+above parameter. If both are used, `tsuid` overrides `codec`.
+
+
+## Other Notes
+
+### New Transfer Syntaxes
+
+The new image formats will encode the pixel data of the dicom objects.
+The transfer syntaxes define the format of the pixel-data of the dicom objects.
+Thus, new transfer syntaxes are created to define pixel-data with the bitstream of those modern codecs.
+
+New Transfer-Syntax list:
+ * JPEG-XL: `1.2.826.0.1.3680043.2.682.104.1`
+ * WebP: `1.2.826.0.1.3680043.2.682.104.2`
+ * AVIF: `1.2.826.0.1.3680043.2.682.104.3`
+
