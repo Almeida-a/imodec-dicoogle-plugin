@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 public class ImodecStoragePlugin implements StorageInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ImodecStoragePlugin.class);
+    private static final String scheme = "imodec-mem";
 
     private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();
     private boolean enabled = true;
@@ -42,7 +43,11 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getScheme() {
-        return "imodec-mem";
+        return scheme;
+    }
+
+    public boolean containsURI(final URI uri) {
+        return mem.containsKey(uri.toString());
     }
 
     @Override
