@@ -12,9 +12,13 @@ import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
-import pt.ua.imodec.util.NewFormat;
+import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.NewFormat;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,13 +28,14 @@ import java.util.function.Supplier;
 
 /**
  *
- * Basic Storage Plugin
+ * Storage Plugin
  *  - "Template" from rlebre/dicoogle-plugin-sample
  * <p>
  * */
 public class ImodecStoragePlugin implements StorageInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ImodecStoragePlugin.class);
+    private static final String scheme = "imodec-mem";
 
     private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();
     private boolean enabled = true;
@@ -38,7 +43,11 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getScheme() {
-        return "imodec-mem";
+        return scheme;
+    }
+
+    public boolean containsURI(final URI uri) {
+        return mem.containsKey(uri.toString());
     }
 
     @Override
@@ -81,16 +90,25 @@ public class ImodecStoragePlugin implements StorageInterface {
 
         Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
         MiscUtils.sleepWhile(choosingProcess);
-        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
 
-        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
+        URI uri = getUri(dicomObject);
         if (mem.containsKey(uri.toString())) {
             logger.warn("This object was already stored!");
             return uri;
         }
 
         try {
-            ImageUtils.encodeDicomObject(dicomObject, chosenFormat);
+            if (chosenFormat instanceof NewFormat) {
+                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat);
+            }
+            else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+                // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
+                DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
+                for (DicomObject dicomObject1 : dicomObjects) {
+                    store(dicomObject1, new Object());
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -108,6 +126,12 @@ public class ImodecStoragePlugin implements StorageInterface {
         return uri;
     }
 
+    private URI getUri(DicomObject dicomObject) {
+        return URI.create(getScheme() + "://"
+                + dicomObject.getString(Tag.SOPInstanceUID) + "/"
+                + dicomObject.getString(Tag.TransferSyntaxUID));
+    }
+
     @Override
     public URI store(DicomInputStream dicomInputStream, Object... objects) throws IOException {
         return store(dicomInputStream.readDicomObject());
@@ -120,7 +144,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getName() {
-        return "imodec-storage";
+        return "imodec-storage-plugin";
     }
 
     @Override

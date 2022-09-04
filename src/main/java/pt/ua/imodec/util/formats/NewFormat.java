@@ -1,22 +1,24 @@
-package pt.ua.imodec.util;
+package pt.ua.imodec.util.formats;
 
 import org.dcm4che2.data.TransferSyntax;
 
-public enum NewFormat {
+public enum NewFormat implements Format {
 
     JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181", "jxl"),
     WEBP(NewFormatsTS.WEBP_TS, "webp", "webp"),
     AVIF(NewFormatsTS.AVIF, "avif", "avif");
 
     private final TransferSyntax transferSyntax;
-    private final String method, fileExtension;
+    private final String method, fileExtension, id;
 
     NewFormat(TransferSyntax transferSyntax, String method, String fileExtension) {
         this.transferSyntax = transferSyntax;
         this.method = method;
         this.fileExtension = fileExtension;
+        this.id = fileExtension;
     }
 
+    @Override
     public TransferSyntax getTransferSyntax() {
         return transferSyntax;
     }
@@ -27,6 +29,11 @@ public enum NewFormat {
 
     public String getFileExtension() {
         return fileExtension;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 
     private static class NewFormatsTS {

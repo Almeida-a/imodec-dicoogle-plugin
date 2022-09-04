@@ -1,6 +1,7 @@
 package pt.ua.imodec;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import org.dcm4che2.data.TransferSyntax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.JettyPluginInterface;
@@ -8,7 +9,9 @@ import pt.ua.dicoogle.sdk.PluginSet;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
-import pt.ua.imodec.util.NewFormat;
+import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
 import java.util.Arrays;
@@ -38,7 +41,7 @@ public class ImodecPluginSet implements PluginSet {
     private final ImodecStoragePlugin storage;
 
     // Additional resources
-    public static NewFormat chosenFormat = null;
+    public static Format chosenFormat = null;
     private ConfigurationHolder settings;
 
     public ImodecPluginSet() {
@@ -73,18 +76,32 @@ public class ImodecPluginSet implements PluginSet {
     }
 
     private static void setImageCompressionFormat(ConfigurationHolder xmlSettings) {
-        NewFormat defaultFormat = NewFormat.JPEG_XL;
 
-        String chosenFormatExtension = xmlSettings.getConfiguration().getString("codec");
+        Format defaultFormat = Native.UNCHANGED;
 
-        chosenFormat = Arrays.stream(NewFormat.values())
-                .filter(newFormat -> newFormat.getFileExtension().equals(chosenFormatExtension))
-                .findFirst()
-                .orElse(defaultFormat);
+        String chosenFormatId = xmlSettings.getConfiguration().getString("codec");
+
+        if (chosenFormatId.equals("all")) {
+            chosenFormat = new Format() {
+                @Override
+                public TransferSyntax getTransferSyntax() {
+                    return null;
+                }
+
+                @Override
+                public String getId() {
+                    return "all";
+                }
+            };
+        } else
+            chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
+                    .filter(newFormat -> newFormat.getId().equals(chosenFormatId))
+                    .findFirst()
+                    .orElse(defaultFormat);
 
         logger.info(
                 String.format("Format requested: '%s', set -> '%s'",
-                        chosenFormatExtension, chosenFormat.getFileExtension())
+                        chosenFormatId, chosenFormat.getId())
         );
     }
 
