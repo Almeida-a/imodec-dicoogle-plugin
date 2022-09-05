@@ -13,6 +13,7 @@ project providing the services of modern image compression codecs.
       2. [dicom-storescu - dicom-rs](#dicom-storescu---dicom-rs)
 3. [Other Notes](#other-notes)
    1. [New transfer syntaxes](#new-transfer-syntaxes)
+   2. [Contributing](#contributing)
 
 ## Building from source
 If you want, you can build from source using the `mvn`
@@ -132,3 +133,6 @@ New Transfer-Syntax list:
  * JPEG-XL: `1.2.826.0.1.3680043.2.682.104.1`
  * WebP: `1.2.826.0.1.3680043.2.682.104.2`
  * AVIF: `1.2.826.0.1.3680043.2.682.104.3`
+
+### Contributing
+This project encompasses developing a set of plugins for the dicoogle software. Therefore, for anyone interested in contributing, imodec follows the [dicoogle development guidelines](https://github.com/bioinformatics-ua/dicoogle/wiki#development-guidelines).
