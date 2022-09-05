@@ -67,7 +67,7 @@ xml settings file (path `Plugins/settings/imodec-plugin-set.xml`):
     <codec>jxl</codec>
 </configuration>
 ```
-Possible values are: `jxl`, `avif`, `webp` and `keep`.
+Possible values are: `jxl`, `avif`, `webp`, `keep` and `all` for all the previous options simultaneously.
 
 
 You need to use a specific tool for the store operation.
