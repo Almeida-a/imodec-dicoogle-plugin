@@ -13,6 +13,7 @@ import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 
 import java.io.ByteArrayInputStream;
@@ -100,16 +101,14 @@ public class ImodecStoragePlugin implements StorageInterface {
 
         try {
             if (chosenFormat instanceof NewFormat) {
-                HashMap<String, Number> options = new HashMap<>();
-                options.put("distance", 1.0f);
-                options.put("effort", 7);
-                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, options);
-            }
-            else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+
+                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
+
+            } else if (chosenFormat.getId().equals("all") && objects.length == 0) {
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
                 DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
                 for (DicomObject dicomObject1 : dicomObjects) {
-                    store(dicomObject1, new Object());
+                    store(dicomObject1, Native.UNCHANGED);
                 }
             }
         } catch (IOException e) {

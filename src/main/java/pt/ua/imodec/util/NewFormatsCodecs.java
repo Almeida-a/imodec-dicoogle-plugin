@@ -19,71 +19,41 @@ public class NewFormatsCodecs {
 
     private static final Logger logger = LoggerFactory.getLogger(NewFormatsCodecs.class);
     private static final String losslessFormat = "png";
-    public static byte[] encodePNGFile(File tmpImageFile, NewFormat chosenFormat, HashMap<String, Number> options)
+
+    public static byte[] encodePNGFile(File pngFile, NewFormat chosenFormat, HashMap<String, Number> options)
             throws IOException {
 
         // Input validation
-        assert tmpImageFile.exists(): String.format("PNG file to encode '%s' does not exist.", tmpImageFile);
+        assert pngFile.exists(): String.format("PNG file to encode '%s' does not exist.", pngFile);
 
-        String tmpFilePath = tmpImageFile.getAbsolutePath();
+        String formatExtension = chosenFormat.getFileExtension();
+        String pngFilePath = pngFile.getAbsolutePath();
+        String encodedFileName = pngFilePath.replace("png", formatExtension);
 
-        String formatExtension;
-
-        switch (chosenFormat) {
-            case JPEG_XL:
-
-                formatExtension = "jxl";
-
-                return encode(tmpFilePath, formatExtension, options);
-
-            case WEBP:
-
-                formatExtension = "webp";
-
-                return encode(tmpFilePath, formatExtension, options);
-            case AVIF:
-
-                formatExtension = "avif";
-
-                return encode(tmpFilePath, formatExtension, options);
-            default:
-                throw new IllegalStateException("Unexpected format!");
-        }
-    }
-
-    private static byte[] encode(String inputFilePath, String formatExtension, HashMap<String, Number> options)
-            throws IOException {
-
-        String encodedFileName = inputFilePath.replace("png", formatExtension);
-
-        String encodingCommand = getCodecCommand(inputFilePath, encodedFileName, formatExtension,
+        String encodingCommand = getCodecCommand(pngFilePath, encodedFileName, formatExtension,
                 true, options);
 
-        // Execute the command and wait for it to finish
-        Process compression = Runtime.getRuntime().exec(encodingCommand);
-        try {
-            compression.waitFor();
-        } catch (InterruptedException ignored) {}
-
-        finalizeProcessExecution(compression);
+        execute(encodingCommand);
 
         File encodedImageFile = new File(encodedFileName);
 
         encodedImageFile.deleteOnExit();
 
         return Files.readAllBytes(encodedImageFile.toPath());
+
     }
 
-    private static void finalizeProcessExecution(Process process) {
-        if (process.isAlive()) {
-            logger.info("Process '%s' executed successfully!");
-            return;
-        }
+    private static void execute(String encodingCommand) throws IOException {
+        // Execute the command and wait for it to finish
+        Process compression = Runtime.getRuntime().exec(encodingCommand);
+        try {
+            compression.waitFor();
+        } catch (InterruptedException ignored) {}
 
-        if (process.exitValue() != 0) {
-            InputStream processErrorStream = process.getErrorStream();
+        if (compression.exitValue() != 0) {
+            InputStream processErrorStream = compression.getErrorStream();
             logger.error(String.format("Problem executing process: '%s' failed unexpectedly.\n" +
-                    "Error stream: %s", process, processErrorStream));
+                    "Error stream: %s", compression, processErrorStream));
             System.exit(1);
         }
     }
