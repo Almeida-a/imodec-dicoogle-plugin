@@ -1,11 +1,14 @@
 package pt.ua.imodec.util;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.data.VR;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.util.validators.OSValidator;
 
 import javax.imageio.ImageIO;
@@ -17,6 +20,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class ImageUtils {
@@ -89,6 +94,19 @@ public class ImageUtils {
 
         logger.info("Encoding with recent formats...");
 
+        if (dicomObject.contains(Tag.LossyImageCompression)
+                && dicomObject.getString(Tag.LossyImageCompression).equals("01")) {
+            logger.error("Lossy image compression has already been subjected, thus it cannot be re-applied. " +
+                    "Aborting...");
+            return;
+        }
+        if (dicomObject.contains(Tag.AllowLossyCompression)
+                && dicomObject.getString(Tag.AllowLossyCompression).equals("NO")) {
+            logger.error("Lossy compression is not allowed to be applied in this dicom object " +
+                    "(AllowLossyCompression field is set false)");
+            return;
+        }
+
         if (!OSValidator.validate())
             throw new IllegalStateException(
                     String.format("Unsupported OS: '%s' for Imodec storage plugin", System.getProperty("os.name"))
@@ -115,6 +133,27 @@ public class ImageUtils {
         dicomObject.putString(Tag.LossyImageCompression, VR.CS, "01");
         dicomObject.putString(Tag.LossyImageCompressionRatio, VR.DS, String.valueOf(rawImageByteSize / compressedImageByteSize));
         dicomObject.putString(Tag.LossyImageCompressionMethod, VR.CS, chosenFormat.getMethod());
+
+    }
+
+    public static DicomObject[] encodeDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
+
+        if (dicomObject.contains(Tag.LossyImageCompression)
+                && dicomObject.getString(Tag.LossyImageCompression).equals("01"))
+            throw new IllegalArgumentException("Cannot re-apply lossy compression to image!");
+
+        NewFormat[] newFormats = NewFormat.values();
+        DicomObject[] clones = new DicomObject[newFormats.length + 1];
+
+        // The "original" clone - like Boba Fett to the clone army
+        clones[0] = dicomObject;
+
+        for (int i = 0; i < newFormats.length; i++) {
+            clones[i+1] = (DicomObject) SerializationUtils.clone(dicomObject);
+            ImageUtils.encodeDicomObject(clones[i+1], newFormats[i]);
+        }
+
+        return clones;
 
     }
 }

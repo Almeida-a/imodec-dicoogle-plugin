@@ -3,6 +3,8 @@ package pt.ua.imodec.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pt.ua.imodec.util.formats.NewFormat;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -124,7 +126,8 @@ public class NewFormatsCodecs {
     }
 
     public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
-        String encodedFileName = String.format("/tmp/imodec/%s.%s", Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
+        String encodedFileName = String.format("/tmp/imodec/%s.%s", Arrays.hashCode(bitstream),
+                chosenFormat.getFileExtension());
         Files.write(Paths.get(encodedFileName), bitstream);
         return decode(encodedFileName, chosenFormat.getFileExtension());
     }
