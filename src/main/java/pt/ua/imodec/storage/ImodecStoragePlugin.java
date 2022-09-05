@@ -96,7 +96,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
         Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
         MiscUtils.sleepWhile(choosingProcess);
-        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
 
         try {
             if (chosenFormat instanceof NewFormat) {

@@ -150,7 +150,7 @@ public class ImageUtils {
 
         for (int i = 0; i < newFormats.length; i++) {
             clones[i+1] = (DicomObject) SerializationUtils.clone(dicomObject);
-            ImageUtils.encodeDicomObject(clones[i+1], newFormats[i]);
+            ImageUtils.encodeDicomObject(clones[i+1], newFormats[i], new HashMap<>());
         }
 
         return clones;
