@@ -2,14 +2,13 @@ package pt.ua.imodec.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.formats.NewFormat;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -36,7 +35,6 @@ public class NewFormatsCodecs {
         execute(encodingCommand);
 
         File encodedImageFile = new File(encodedFileName);
-
         encodedImageFile.deleteOnExit();
 
         return Files.readAllBytes(encodedImageFile.toPath());
@@ -51,10 +49,9 @@ public class NewFormatsCodecs {
         } catch (InterruptedException ignored) {}
 
         if (compression.exitValue() != 0) {
-            InputStream processErrorStream = compression.getErrorStream();
-            logger.error(String.format("Problem executing process: '%s' failed unexpectedly.\n" +
-                    "Error stream: %s", compression, processErrorStream));
-            System.exit(1);
+            logger.error("Problem executing process: '{}' failed unexpectedly with error '{}'.\n" +
+                    "Error code: %s", encodingCommand, compression.exitValue());
+            throw new AssertionError("Unexpected error");
         }
     }
 
@@ -66,29 +63,29 @@ public class NewFormatsCodecs {
         switch (formatExtension) {
             case "jxl":
                 if (encoding) {
-                    float distance = (float) options.getOrDefault("distance", NewFormat.JPEG_XL
-                            .getDefaultQualityParamValue());
-                    int effort = (int) options.getOrDefault("effort", NewFormat.JPEG_XL.getDefaultSpeedParamValue());
+                    Number distance = options.getOrDefault("distance", NewFormat.JPEG_XL
+                            .getQualityParamValue());
+                    Number effort = options.getOrDefault("effort", NewFormat.JPEG_XL.getSpeedParamValue());
 
-                    return String.format("cjxl %s %s --effort=%d --distance=%.3f",
+                    return String.format("cjxl %s %s --effort=%s --distance=%s",
                             inputPath, outputPath, effort, distance);
                 }
                 return String.format("djxl %s %s", inputPath, outputPath);
             case "avif":
                 if (encoding) {
-                    int quality = (int) options.getOrDefault("quality", NewFormat.AVIF.getDefaultQualityParamValue()),
-                            speed = (int) options.getOrDefault("speed", NewFormat.AVIF.getDefaultSpeedParamValue());
-                    return String.format("cavif -o %s --quality %d --speed %d %s", outputPath, quality, speed,
+                    Number quality = options.getOrDefault("quality", NewFormat.AVIF.getQualityParamValue()),
+                            speed = options.getOrDefault("speed", NewFormat.AVIF.getSpeedParamValue());
+                    return String.format("cavif -o %s --quality %s --speed %s %s", outputPath, quality, speed,
                             inputPath);
                 }
                 return String.format("avif_decode %s %s", inputPath, outputPath);
             case "webp":
                 if (encoding) {
-                    int quality = (int) options.getOrDefault("quality", NewFormat.WEBP.getDefaultQualityParamValue()),
-                            speed = (int) options.getOrDefault("speed", NewFormat.WEBP.getDefaultSpeedParamValue());
-                    return String.format("cwebp -q %d -m %d %s -o %s", quality, speed, inputPath, outputPath);
+                    Number quality = options.getOrDefault("quality", NewFormat.WEBP.getQualityParamValue()),
+                            speed = options.getOrDefault("speed", NewFormat.WEBP.getSpeedParamValue());
+                    return String.format("cwebp -q %s -m %s %s -o %s", quality, speed, inputPath, outputPath);
                 }
-                return String.format("dwebp %s %s", inputPath, outputPath);
+                return String.format("dwebp %s -o %s", inputPath, outputPath);
             default:
                 throw new IllegalArgumentException("Format is not valid!");
         }
@@ -96,8 +93,8 @@ public class NewFormatsCodecs {
     }
 
     public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
-        String encodedFileName = String.format("/tmp/imodec/%s.%s", Arrays.hashCode(bitstream),
-                chosenFormat.getFileExtension());
+        String encodedFileName = String.format("%s/%s.%s", ImodecPluginSet.tmpDirPath,
+                Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
         Files.write(Paths.get(encodedFileName), bitstream);
         return decode(encodedFileName, chosenFormat.getFileExtension());
     }
@@ -109,13 +106,10 @@ public class NewFormatsCodecs {
         String decodingCommand = getCodecCommand(inputFilePath, decodedFileName, formatExtension, false,
                 new HashMap<>());
 
-        Process decompression = Runtime.getRuntime().exec(decodingCommand);
-
-        try {
-            decompression.waitFor();
-        } catch (InterruptedException ignored) {}
+        execute(decodingCommand);
 
         File decodedImageFile = new File(decodedFileName);
+        decodedImageFile.deleteOnExit();
 
         return ImageIO.read(decodedImageFile);
 

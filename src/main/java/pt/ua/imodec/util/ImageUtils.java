@@ -7,7 +7,7 @@ import org.dcm4che2.data.VR;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.util.validators.OSValidator;
 
@@ -20,8 +20,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 
 public class ImageUtils {
@@ -53,14 +51,12 @@ public class ImageUtils {
 
     public static BufferedImage loadDicomImage(DicomObject dicomObject) throws IOException {
 
-        String tmpDicomFileName = String.format("/tmp/imodec/ImageUtils/%s.dcm",
+        String tmpDicomFileName = String.format("%s/ImageUtils/%s.dcm", ImodecPluginSet.tmpDirPath,
                 dicomObject.getString(Tag.SOPInstanceUID));
         File tmpDicomFile = new File(tmpDicomFileName);
         tmpDicomFile.deleteOnExit();
 
-        if (!DicomUtils.saveDicomFile(dicomObject, tmpDicomFile, true)) {
-            logger.warn("Hash collision in creating the tmp file. Overwriting...");
-        }
+        DicomUtils.saveDicomFile(dicomObject, tmpDicomFile, true);
 
         DicomInputStream dicomInputStream = new DicomInputStream(tmpDicomFile);
 
@@ -117,7 +113,7 @@ public class ImageUtils {
         // Change dicom object from uncompressed to JPEG XL, WebP or AVIF format
         BufferedImage dicomImage = loadDicomImage(dicomObject);
 
-        String tmpFileName = String.format("/tmp/imodec/ImageUtils/%d.png", dicomImage.hashCode());
+        String tmpFileName = String.format("%s/ImageUtils/%d.png", ImodecPluginSet.tmpDirPath, dicomImage.hashCode());
         File tmpImageFile = new File(tmpFileName);
         tmpImageFile.deleteOnExit();
 

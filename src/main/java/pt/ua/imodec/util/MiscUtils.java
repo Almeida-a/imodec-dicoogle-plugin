@@ -2,9 +2,12 @@ package pt.ua.imodec.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class MiscUtils {
@@ -40,5 +43,36 @@ public class MiscUtils {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public static Map<String, Number> getOptions(String formatId) {
+        Map<String, Map<String, Number>> options = getOptions();
+
+        return options.get(formatId);
+    }
+
+    public static Map<String, Map<String, Number>> getOptions() {
+        Yaml yaml = new Yaml();
+
+        InputStream inputStream = MiscUtils.class
+                .getClassLoader()
+                .getResourceAsStream("encoding-options.yaml");
+
+        return yaml.load(inputStream);
+    }
+
+    public static Number gracefulCast(Number number, Class<? extends Number> toType) {
+        if (Float.class.equals(toType))
+            return number.floatValue();
+        else if (Double.class.equals(toType))
+            return number.doubleValue();
+        else if (Integer.class.equals(toType))
+            return number.intValue();
+        else if (Short.class.equals(toType))
+            return number.shortValue();
+        else if (Byte.class.equals(toType))
+            return number.byteValue();
+        logger.error("Invalid type to cast to!");
+        return number;
     }
 }

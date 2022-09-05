@@ -14,6 +14,8 @@ import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +44,8 @@ public class ImodecPluginSet implements PluginSet {
 
     // Additional resources
     public static Format chosenFormat = null;
+    public static final Path tmpDirPath = Paths.get("/tmp/imodec");
+
     private ConfigurationHolder settings;
 
     public ImodecPluginSet() {

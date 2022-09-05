@@ -1,33 +1,35 @@
 package pt.ua.imodec.util.formats;
 
 import org.dcm4che2.data.TransferSyntax;
+import pt.ua.imodec.util.MiscUtils;
 
 public enum NewFormat implements Format {
 
-    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181", "jxl", 1.0f, 7),
-    WEBP(NewFormatsTS.WEBP_TS, "webp", "webp", 75, 4),
-    AVIF(NewFormatsTS.AVIF_TS, "avif", "avif", 80, 4);
+    JPEG_XL(NewFormatsTS.JPEG_XL_TS, "ISO_18181",
+            "jxl", "distance", "effort", Float.class),
+    WEBP(NewFormatsTS.WEBP_TS, "webp",
+            "webp", "quality", "speed", Byte.class),
+    AVIF(NewFormatsTS.AVIF_TS, "avif",
+            "avif", "quality", "speed", Byte.class);
 
     private final TransferSyntax transferSyntax;
-    private final String method, fileExtension, id;
-    private final String method, fileExtension;
-    private final Number defaultQualityParamValue, defaultSpeedParamValue;
+    private final String method, fileExtension, id, qualityParamName, speedParamName;
 
-    public Number getDefaultQualityParamValue() {
-        return defaultQualityParamValue;
-    }
+    private Number qualityParamValue, speedParamValue;
+    private final Class<? extends Number> qualityParamType;
 
-    public Number getDefaultSpeedParamValue() {
-        return defaultSpeedParamValue;
-    }
-
-    NewFormat(TransferSyntax transferSyntax, String method, String fileExtension, Number defaultQualityParamValue, Number defaultSpeedParamValue) {
+    NewFormat(TransferSyntax transferSyntax, String method, String fileExtension, String qualityParamName,
+              String speedParamName, Class<? extends Number> qualityValueType) {
         this.transferSyntax = transferSyntax;
         this.method = method;
         this.fileExtension = fileExtension;
-        this.defaultQualityParamValue = defaultQualityParamValue;
-        this.defaultSpeedParamValue = defaultSpeedParamValue;
         this.id = fileExtension;
+        this.qualityParamName = qualityParamName;
+        Number number = MiscUtils.getOptions(fileExtension).get(qualityParamName);
+        this.qualityParamValue = MiscUtils.gracefulCast(number, qualityValueType);
+        this.qualityParamType = qualityValueType;
+        this.speedParamName = speedParamName;
+        this.speedParamValue = MiscUtils.getOptions(fileExtension).get(speedParamName).byteValue();
     }
 
     @Override
@@ -46,6 +48,30 @@ public enum NewFormat implements Format {
     @Override
     public String getId() {
         return id;
+    }
+
+    public Number getQualityParamValue() {
+        return qualityParamValue;
+    }
+
+    public Number getSpeedParamValue() {
+        return speedParamValue;
+    }
+
+    public void setQualityParamValue(Number qualityParamValue) {
+        this.qualityParamValue = qualityParamType.cast(qualityParamValue);
+    }
+
+    public void setSpeedParamValue(Number speedParamValue) {
+        this.speedParamValue = speedParamValue;
+    }
+
+    public String getQualityParamName() {
+        return qualityParamName;
+    }
+
+    public String getSpeedParamName() {
+        return speedParamName;
     }
 
     private static class NewFormatsTS {
