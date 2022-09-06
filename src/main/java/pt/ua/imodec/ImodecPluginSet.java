@@ -106,24 +106,31 @@ public class ImodecPluginSet implements PluginSet {
                     .filter(configurationNode -> configurationNode.getName().equals(format1.getSpeedParamName()))
                     .findFirst();
 
-            try {
-                if (attributeQuality.isPresent()) {
+            if (attributeQuality.isPresent()) {
+                try {
                     Float value = Float.valueOf((String) attributeQuality.get().getValue());
-                    logger.info("Format '{}' quality option '{}' was changed to '{}'",
+                    logger.debug("Format '{}' quality option '{}' was changed to '{}'",
                             format1.getId(), format1.getQualityParamValue(), value);
                     format1.setQualityParamValue(value);
+                } catch (ClassCastException | NumberFormatException ignored) {
+                    logger.warn("Invalid quality value for '{}' -> '{}'." +
+                                    " Maintaining default options.",
+                            format1.getFileExtension(), attributeQuality.get().getValue());
                 }
-            } catch (ClassCastException | NumberFormatException ignored) {}
+            }
 
-            try {
-                if (attributeSpeed.isPresent()) {
+            if (attributeSpeed.isPresent()) {
+                try {
                     Float value = Float.valueOf((String) attributeSpeed.get().getValue());
-                    logger.info("Format '{}' speed option '{}' was changed to '{}'",
+                    logger.debug("Format '{}' speed option '{}' was changed to '{}'",
                             format1.getId(), format1.getSpeedParamValue(), value);
                     format1.setSpeedParamValue(value);
+                } catch (ClassCastException | NumberFormatException ignored) {
+                    logger.warn("Invalid speed value for '{}' -> '{}'." +
+                                    " Maintaining default options.",
+                            format1.getFileExtension(), attributeSpeed.get().getValue());
                 }
-            } catch (ClassCastException | NumberFormatException ignored) {}
-
+            }
         }
     }
 
