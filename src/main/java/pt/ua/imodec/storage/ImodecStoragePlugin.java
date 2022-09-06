@@ -13,6 +13,7 @@ import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 
 import java.io.ByteArrayInputStream;
@@ -86,27 +87,28 @@ public class ImodecStoragePlugin implements StorageInterface {
     @Override
     public URI store(DicomObject dicomObject, Object... objects) {
 
-        logger.warn("Waiting while format is being set");
-
-        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
-        MiscUtils.sleepWhile(choosingProcess);
-        Format chosenFormat = ImodecPluginSet.chosenFormat;
-
         URI uri = getUri(dicomObject);
         if (mem.containsKey(uri.toString())) {
             logger.warn("This object was already stored!");
             return uri;
         }
 
+        logger.info("Waiting while format is being set");
+
+        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
+        MiscUtils.sleepWhile(choosingProcess);
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
+
         try {
             if (chosenFormat instanceof NewFormat) {
-                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat);
-            }
-            else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+
+                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
+
+            } else if (chosenFormat.getId().equals("all") && objects.length == 0) {
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
                 DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
                 for (DicomObject dicomObject1 : dicomObjects) {
-                    store(dicomObject1, new Object());
+                    store(dicomObject1, Native.UNCHANGED);
                 }
             }
         } catch (IOException e) {

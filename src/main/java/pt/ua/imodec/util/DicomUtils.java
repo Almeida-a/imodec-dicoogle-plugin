@@ -17,9 +17,8 @@ public class DicomUtils {
      *
      * @param dicomObject dicom data to save
      * @param dicomFile Path of the file that will be created
-     * @return Whether if the operation is successful or not
      */
-    public static boolean saveDicomFile(DicomObject dicomObject, File dicomFile, boolean temporary) throws IOException {
+    public static void saveDicomFile(DicomObject dicomObject, File dicomFile, boolean temporary) throws IOException {
 
         if (dicomFile.exists())
             logger.warn("File '" + dicomFile.getAbsolutePath() + "' already exists! Overwriting");
@@ -34,7 +33,6 @@ public class DicomUtils {
 
         try (DicomOutputStream outputStream = new DicomOutputStream(dicomFile)) {
             outputStream.writeDicomFile(dicomObject);
-            return true;
         }
 
     }

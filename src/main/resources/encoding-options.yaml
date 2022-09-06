@@ -1,0 +1,9 @@
+jxl:
+  distance: 1.0
+  effort: 7
+avif:
+  quality: 90
+  speed: 4
+webp:
+  quality: 90
+  speed: 4

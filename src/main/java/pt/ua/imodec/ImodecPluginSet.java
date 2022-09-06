@@ -1,6 +1,8 @@
 package pt.ua.imodec;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.dcm4che2.data.TransferSyntax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +16,9 @@ import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 /**
  *
@@ -42,6 +44,8 @@ public class ImodecPluginSet implements PluginSet {
 
     // Additional resources
     public static Format chosenFormat = null;
+    public static final Path tmpDirPath = Paths.get("/tmp/imodec");
+
     private ConfigurationHolder settings;
 
     public ImodecPluginSet() {
@@ -69,10 +73,65 @@ public class ImodecPluginSet implements PluginSet {
     @Override
     public void setSettings(ConfigurationHolder xmlSettings) {
 
-        if (chosenFormat == null)
+        if (chosenFormat == null) {
             setImageCompressionFormat(xmlSettings);
+            setEncoderOptions(xmlSettings);
+        }
 
         this.settings = xmlSettings;
+    }
+
+    private void setEncoderOptions(ConfigurationHolder xmlSettings) {
+
+        List<ConfigurationNode> configurationNodeList = xmlSettings
+                .getConfiguration()
+                .getRootNode().getChildren();
+
+        for (ConfigurationNode tag :
+                configurationNodeList) {
+            Optional<NewFormat> format = Arrays.stream(NewFormat.values())
+                    .filter(format1 -> format1.getFileExtension().equals(tag.getName()))
+                    .findFirst();
+
+            if (!format.isPresent())
+                continue;
+
+            NewFormat format1 = format.get();
+            Optional<ConfigurationNode> attributeQuality = tag.getAttributes()
+                    .stream()
+                    .filter(configurationNode -> configurationNode.getName().equals(format1.getQualityParamName()))
+                    .findFirst();
+            Optional<ConfigurationNode> attributeSpeed = tag.getAttributes()
+                    .stream()
+                    .filter(configurationNode -> configurationNode.getName().equals(format1.getSpeedParamName()))
+                    .findFirst();
+
+            if (attributeQuality.isPresent()) {
+                try {
+                    Float value = Float.valueOf((String) attributeQuality.get().getValue());
+                    logger.debug("Format '{}' quality option '{}' was changed to '{}'",
+                            format1.getId(), format1.getQualityParamValue(), value);
+                    format1.setQualityParamValue(value);
+                } catch (ClassCastException | NumberFormatException ignored) {
+                    logger.warn("Invalid quality value for '{}' -> '{}'." +
+                                    " Maintaining default options.",
+                            format1.getFileExtension(), attributeQuality.get().getValue());
+                }
+            }
+
+            if (attributeSpeed.isPresent()) {
+                try {
+                    Float value = Float.valueOf((String) attributeSpeed.get().getValue());
+                    logger.debug("Format '{}' speed option '{}' was changed to '{}'",
+                            format1.getId(), format1.getSpeedParamValue(), value);
+                    format1.setSpeedParamValue(value);
+                } catch (ClassCastException | NumberFormatException ignored) {
+                    logger.warn("Invalid speed value for '{}' -> '{}'." +
+                                    " Maintaining default options.",
+                            format1.getFileExtension(), attributeSpeed.get().getValue());
+                }
+            }
+        }
     }
 
     private static void setImageCompressionFormat(ConfigurationHolder xmlSettings) {
