@@ -85,10 +85,24 @@ public class ImageUtils {
 
     }
 
-    public static void encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat,
-                                         HashMap<String, Number> options) throws IOException {
+    public static void encodeDicomObject(
+            DicomObject dicomObject, NewFormat chosenFormat,
+            HashMap<String, Number> options) throws IOException {
 
-        logger.info("Encoding with recent formats...");
+        if (dicomObject.getInt(Tag.NumberOfFrames) == 1)
+            encodeSingleFrameDicomObject(dicomObject, chosenFormat, options);
+        else
+            encodeMultiFrameDicomObject(dicomObject, chosenFormat, options);
+
+    }
+
+    private static void encodeMultiFrameDicomObject(DicomObject dicomObject, NewFormat chosenFormat, HashMap<String, Number> options) {
+        // TODO: 06/09/22 Start issue 11 here...
+    }
+
+    private static void encodeSingleFrameDicomObject(DicomObject dicomObject, NewFormat chosenFormat, HashMap<String, Number> options) throws IOException {
+        logger.info("Encoding single-frame dicom object with '{}' format...",
+                chosenFormat.getFileExtension());
 
         if (dicomObject.contains(Tag.LossyImageCompression)
                 && dicomObject.getString(Tag.LossyImageCompression).equals("01")) {
@@ -129,7 +143,6 @@ public class ImageUtils {
         dicomObject.putString(Tag.LossyImageCompression, VR.CS, "01");
         dicomObject.putString(Tag.LossyImageCompressionRatio, VR.DS, String.valueOf(rawImageByteSize / compressedImageByteSize));
         dicomObject.putString(Tag.LossyImageCompressionMethod, VR.CS, chosenFormat.getMethod());
-
     }
 
     public static DicomObject[] encodeDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
