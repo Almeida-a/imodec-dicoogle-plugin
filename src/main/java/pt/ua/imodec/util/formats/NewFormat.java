@@ -59,11 +59,11 @@ public enum NewFormat implements Format {
     }
 
     public void setQualityParamValue(Number qualityParamValue) {
-        this.qualityParamValue = qualityParamType.cast(qualityParamValue);
+        this.qualityParamValue = MiscUtils.gracefulCast(qualityParamValue, qualityParamType);
     }
 
     public void setSpeedParamValue(Number speedParamValue) {
-        this.speedParamValue = speedParamValue;
+        this.speedParamValue = speedParamValue.byteValue();
     }
 
     public String getQualityParamName() {

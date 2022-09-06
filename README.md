@@ -11,8 +11,11 @@ project providing the services of modern image compression codecs.
    3. [Store-SCU operation](#store-scu-operation)
       1. [storescu - dcmtk](#storescu---dcmtk)
       2. [dicom-storescu - dicom-rs](#dicom-storescu---dicom-rs)
+   4. [View the resulting images](#view-the-resulting-images)
+      1. [Http Request Structure](#http-request-structure)
 3. [Other Notes](#other-notes)
    1. [New transfer syntaxes](#new-transfer-syntaxes)
+   2. [Configuring encoding options](#configuring-encoding-options)
 
 ## Building from source
 If you want, you can build from source using the `mvn`
@@ -132,3 +135,19 @@ New Transfer-Syntax list:
  * JPEG-XL: `1.2.826.0.1.3680043.2.682.104.1`
  * WebP: `1.2.826.0.1.3680043.2.682.104.2`
  * AVIF: `1.2.826.0.1.3680043.2.682.104.3`
+
+### Configuring encoding options
+
+This is a more advanced configuration.
+You can define encoding options such as quality or speed of compression
+(depending on the name of the configuration parameters).
+
+An example of those options is displayed below:
+```xml
+<configurations>
+   ...
+   <jxl distance="1.0" effort="7" />
+   <avif quality="90" speed="4" />
+   <webp quality="90" speed="4" />
+</configurations>
+```
