@@ -15,7 +15,8 @@ project providing the services of modern image compression codecs.
       1. [Http Request Structure](#http-request-structure)
 3. [Other Notes](#other-notes)
    1. [New transfer syntaxes](#new-transfer-syntaxes)
-   2. [Configuring encoding options](#configuring-encoding-options)
+   2. [Contributing](#contributing)
+   3. [Configuring encoding options](#configuring-encoding-options)
 
 ## Building from source
 If you want, you can build from source using the `mvn`
@@ -135,6 +136,9 @@ New Transfer-Syntax list:
  * JPEG-XL: `1.2.826.0.1.3680043.2.682.104.1`
  * WebP: `1.2.826.0.1.3680043.2.682.104.2`
  * AVIF: `1.2.826.0.1.3680043.2.682.104.3`
+
+### Contributing
+This project encompasses developing a set of plugins for the dicoogle software. Therefore, for anyone interested in contributing, imodec follows the [dicoogle development guidelines](https://github.com/bioinformatics-ua/dicoogle/wiki#development-guidelines).
 
 ### Configuring encoding options
 
