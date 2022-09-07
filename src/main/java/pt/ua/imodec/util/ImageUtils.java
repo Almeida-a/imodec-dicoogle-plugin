@@ -19,6 +19,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -42,7 +43,7 @@ public class ImageUtils {
             ImageReader reader = getImageReader("DICOM");
             ImageReadParam param = reader.getDefaultReadParam();
             reader.setInput(imageInputStream, false);
-            BufferedImage image = reader.read(0, param);
+            BufferedImage image = reader.read(0, param);  // TODO: 07/09/22 Remember, 0 is the plane (continue here...)
             if (image == null)
                 throw new NullPointerException("Error reading dicom image!");
             return image;
@@ -96,8 +97,10 @@ public class ImageUtils {
 
     }
 
-    private static void encodeMultiFrameDicomObject(DicomObject dicomObject, NewFormat chosenFormat, HashMap<String, Number> options) {
+    private static void encodeMultiFrameDicomObject(DicomObject dicomObject, NewFormat chosenFormat,
+                                                    HashMap<String, Number> options) throws IOException {
         // TODO: 06/09/22 Start issue 11 here...
+        BufferedImage image = loadDicomImage(dicomObject);
     }
 
     private static void encodeSingleFrameDicomObject(DicomObject dicomObject, NewFormat chosenFormat, HashMap<String, Number> options) throws IOException {
@@ -145,7 +148,7 @@ public class ImageUtils {
         dicomObject.putString(Tag.LossyImageCompressionMethod, VR.CS, chosenFormat.getMethod());
     }
 
-    public static DicomObject[] encodeDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
+    public static DicomObject[] encodeArrayDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
 
         if (dicomObject.contains(Tag.LossyImageCompression)
                 && dicomObject.getString(Tag.LossyImageCompression).equals("01"))
@@ -164,5 +167,35 @@ public class ImageUtils {
 
         return clones;
 
+    }
+
+    public static Iterator<DicomObject> encodeIteratorDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
+        if (dicomObject.contains(Tag.LossyImageCompression)
+                && dicomObject.getString(Tag.LossyImageCompression).equals("01"))
+            throw new IllegalArgumentException("Cannot re-apply lossy compression to image!");
+
+        Iterator<NewFormat> newFormats = Arrays.stream(NewFormat.values()).iterator();
+
+        return new Iterator<DicomObject>() {
+            @Override
+            public boolean hasNext() {
+                return newFormats.hasNext();
+            }
+
+            @Override
+            public DicomObject next() {
+                try {
+                    DicomObject dicomObjectClone = (DicomObject) SerializationUtils.clone(dicomObject);
+                    ImageUtils.encodeDicomObject(dicomObjectClone, newFormats.next(), new HashMap<>());
+                    return dicomObjectClone;
+                } catch (IOException e) {
+                    logger.error("Unexpected error!");
+                    throw new RuntimeException(e);
+                } catch (OutOfMemoryError error) {
+                    logger.error("File is too big!");
+                    throw new RuntimeException(error);
+                }
+            }
+        };
     }
 }

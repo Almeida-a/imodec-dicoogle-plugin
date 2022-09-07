@@ -21,10 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -106,9 +103,9 @@ public class ImodecStoragePlugin implements StorageInterface {
 
             } else if (chosenFormat.getId().equals("all") && objects.length == 0) {
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
-                DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
-                for (DicomObject dicomObject1 : dicomObjects) {
-                    store(dicomObject1, Native.UNCHANGED);
+                Iterator<DicomObject> dicomObjectsIterator = ImageUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
+                while (dicomObjectsIterator.hasNext()) {
+                    store(dicomObjectsIterator.next(), Native.UNCHANGED);
                 }
             }
         } catch (IOException e) {
@@ -129,9 +126,17 @@ public class ImodecStoragePlugin implements StorageInterface {
     }
 
     private URI getUri(DicomObject dicomObject) {
+
+        String tsUID;
+
+        if (ImodecPluginSet.chosenFormat.equals(Native.UNCHANGED))
+            tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        else
+            tsUID = ImodecPluginSet.chosenFormat.getTransferSyntax().uid();
+
         return URI.create(getScheme() + "://"
                 + dicomObject.getString(Tag.SOPInstanceUID) + "/"
-                + dicomObject.getString(Tag.TransferSyntaxUID));
+                + tsUID);
     }
 
     @Override
