@@ -1,6 +1,6 @@
 package pt.ua.imodec.util.validators;
 
-public class OSValidator {
+public class OSValidator implements Validator {
 
     private static final String OS = System.getProperty("os.name").toLowerCase();
 

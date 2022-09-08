@@ -86,7 +86,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
                     );
         }
         else
-            dicomImage = ImageUtils.loadDicomImage(dicomInputStream);
+            dicomImage = ImageUtils.loadDicomImage(dicomInputStream, 0);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(dicomImage, "png", baos);

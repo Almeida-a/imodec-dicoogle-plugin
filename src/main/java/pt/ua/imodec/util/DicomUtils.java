@@ -20,8 +20,10 @@ public class DicomUtils {
      */
     public static void saveDicomFile(DicomObject dicomObject, File dicomFile, boolean temporary) throws IOException {
 
-        if (dicomFile.exists())
-            logger.warn("File '" + dicomFile.getAbsolutePath() + "' already exists! Overwriting");
+        if (dicomFile.exists()) {
+            logger.debug("File '" + dicomFile.getAbsolutePath() + "' already exists! No operation.");
+            return;
+        }
 
         if (!MiscUtils.createNewFile(dicomFile, true))
             throw new IllegalStateException(
