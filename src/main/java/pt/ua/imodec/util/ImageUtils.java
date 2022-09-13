@@ -1,5 +1,6 @@
 package pt.ua.imodec.util;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SerializationUtils;
 import org.dcm4che2.data.*;
 import org.dcm4che2.io.DicomInputStream;
@@ -13,10 +14,11 @@ import pt.ua.imodec.util.validators.OSValidator;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.rmi.UnexpectedException;
 import java.util.Arrays;
@@ -53,16 +55,39 @@ public class ImageUtils {
 
     public static BufferedImage loadDicomImage(DicomObject dicomObject, int frame) throws IOException {
 
-        String tmpDicomFileName = String.format("%s/ImageUtils/%s.dcm", ImodecPluginSet.tmpDirPath,
-                dicomObject.getString(Tag.SOPInstanceUID));
-        File tmpDicomFile = new File(tmpDicomFileName);
-        tmpDicomFile.deleteOnExit();
-
-        DicomUtils.saveDicomFile(dicomObject, tmpDicomFile, true);
+        File tmpDicomFile = DicomUtils.saveDicomFile(dicomObject, true);
 
         DicomInputStream dicomInputStream = new DicomInputStream(tmpDicomFile);
 
         return loadDicomImage(dicomInputStream, frame);
+    }
+
+    public static Iterator<BufferedImage> loadDicomImageIterator(DicomInputStream dicomInputStream) throws IOException {
+
+        File file = new File(ImodecPluginSet.TMP_DIR_PATH + "/loadIteratorTmp.dcm");
+        file.deleteOnExit();
+        FileUtils.copyInputStreamToFile(dicomInputStream, file);
+
+        DicomObject meta = DicomUtils.readNonPixelData(new DicomInputStream(file));
+
+        return new Iterator<BufferedImage>() {
+
+            private int i = 0;
+            private final int frames = meta.getInt(Tag.NumberOfFrames);
+            @Override
+            public boolean hasNext() {
+                return i + 1 < frames;
+            }
+
+            @Override
+            public BufferedImage next() {
+                try {
+                    return loadDicomImage(new DicomInputStream(file), i++);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     public static ImageReader getImageReader(String formatName) {
@@ -74,6 +99,22 @@ public class ImageUtils {
 
         return imageWriterIterator.next();
 
+    }
+
+    public static ImageWriter getImageWriter(String formatName) {
+
+        Iterator<ImageWriter> imageWriterIterator = ImageIO.getImageWritersByFormatName(formatName);
+
+        if (!imageWriterIterator.hasNext())
+            throw new NullPointerException(String.format("Format '%s' is not supported by ImageIO!", formatName));
+
+        return imageWriterIterator.next();
+
+    }
+
+    public static ImageOutputStream getImageOutputStream(String output) throws IOException {
+        File outfile = new File(output);
+        return ImageIO.createImageOutputStream(outfile);
     }
 
     public static void encodeDicomObject(
@@ -107,7 +148,7 @@ public class ImageUtils {
 
         logger.debug("Creating directory to store the (multi-frame) image frames");
         String sopInstUID = dicomObject.getString(Tag.SOPInstanceUID);
-        File imageDir = new File(String.format("%s/%s", ImodecPluginSet.tmpDirPath, sopInstUID));
+        File imageDir = new File(String.format("%s/%s", ImodecPluginSet.TMP_DIR_PATH, sopInstUID));
         if (!imageDir.exists() && !imageDir.mkdirs()) {
             throw new UnexpectedException("Could not create directory!");
         }
@@ -177,7 +218,7 @@ public class ImageUtils {
         BufferedImage dicomImage = loadDicomImage(dicomObject, 0);
 
         logger.debug("Storing image into png file.");
-        File tmpImageFile = new File(String.format("%s/%d.png", ImodecPluginSet.tmpDirPath, dicomImage.hashCode()));
+        File tmpImageFile = new File(String.format("%s/%d.png", ImodecPluginSet.TMP_DIR_PATH, dicomImage.hashCode()));
         tmpImageFile.deleteOnExit();
         ImageIO.write(dicomImage, "png", tmpImageFile);
 

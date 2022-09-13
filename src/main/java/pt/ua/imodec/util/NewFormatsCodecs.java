@@ -93,7 +93,7 @@ public class NewFormatsCodecs {
     }
 
     public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
-        String encodedFileName = String.format("%s/%s.%s", ImodecPluginSet.tmpDirPath,
+        String encodedFileName = String.format("%s/%s.%s", ImodecPluginSet.TMP_DIR_PATH,
                 Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
         Files.write(Paths.get(encodedFileName), bitstream);
         return decode(encodedFileName, chosenFormat.getFileExtension());

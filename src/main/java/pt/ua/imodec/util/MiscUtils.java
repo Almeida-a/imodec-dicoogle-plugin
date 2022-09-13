@@ -4,9 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -75,4 +73,12 @@ public class MiscUtils {
         logger.error("Invalid type to cast to!");
         return number;
     }
+
+//    public static String readHtml(File template) {
+//        try (FileInputStream fileInputStream = new FileInputStream(template)) {
+//            fileInputStream.wr
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 }

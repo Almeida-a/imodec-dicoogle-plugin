@@ -16,11 +16,11 @@ import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -60,7 +60,7 @@ public class ImodecStoragePlugin implements StorageInterface {
                 }
 
                 @Override
-                public InputStream getInputStream() {
+                public InputStream getInputStream() throws IOException {
                     ByteArrayOutputStream bos = mem.get(location.toString());
 
                     if (bos == null)
@@ -68,7 +68,13 @@ public class ImodecStoragePlugin implements StorageInterface {
                                 String.format("File uri='%s' was not found at the storage!", location)
                         );
 
-                    return new ByteArrayInputStream(bos.toByteArray());
+                    try {
+                        return new ByteArrayInputStream(bos.toByteArray());
+                    } catch (OutOfMemoryError ignored) {
+                        logger.info("Large bitstream object encountered. " +
+                                "Changing approach for data retrieval...");
+                        return getInputStreamFromLarge(bos);
+                    }
                 }
 
                 @Override
@@ -119,10 +125,35 @@ public class ImodecStoragePlugin implements StorageInterface {
         } catch (IOException ex) {
             logger.warn("Failed to store object", ex);
         }
-        bos.toByteArray();
+//        bos.toByteArray();
         mem.put(uri.toString(), bos);
 
         return uri;
+    }
+
+    /**
+     *
+     * @param bos Large output stream
+     * @return
+     * @throws IOException
+     */
+    private static InputStream getInputStreamFromLarge(ByteArrayOutputStream bos) throws IOException {
+        File file = new File(
+                String.format("%s/blobs_%s.tmp", ImodecPluginSet.TMP_DIR_PATH, Date.from(Instant.now())));
+
+        if (!file.getParentFile().exists() && !file.getParentFile().mkdir())
+            throw new IOException("Could not create dir: " + ImodecPluginSet.TMP_DIR_PATH);
+
+        if (!file.createNewFile())
+            throw new FileAlreadyExistsException("File -> "+file.getName());
+
+        FileOutputStream fileOutputStream = new FileOutputStream(file);
+        bos.writeTo(fileOutputStream);
+        InputStream inputStream = Files.newInputStream(file.toPath());
+
+        file.deleteOnExit();
+
+        return inputStream;
     }
 
     private URI getUri(DicomObject dicomObject) {

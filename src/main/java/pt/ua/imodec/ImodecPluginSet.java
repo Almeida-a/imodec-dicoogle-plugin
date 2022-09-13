@@ -1,7 +1,6 @@
 package pt.ua.imodec;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.dcm4che2.data.TransferSyntax;
 import org.slf4j.Logger;
@@ -44,7 +43,7 @@ public class ImodecPluginSet implements PluginSet {
 
     // Additional resources
     public static Format chosenFormat = null;
-    public static final Path tmpDirPath = Paths.get("/tmp/imodec");
+    public static final Path TMP_DIR_PATH = Paths.get("/tmp/imodec");
 
     private ConfigurationHolder settings;
 
