@@ -2,7 +2,6 @@ package pt.ua.imodec.webservice;
 
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
-import org.dcm4che2.data.TransferSyntax;
 import org.dcm4che2.io.DicomInputStream;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -11,17 +10,11 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
-import pt.ua.imodec.util.DicomUtils;
-import pt.ua.imodec.util.GifSequenceWriter;
-import pt.ua.imodec.util.ImageUtils;
-import pt.ua.imodec.util.NewFormatsCodecs;
+import pt.ua.imodec.util.*;
 import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 
-import javax.imageio.ImageIO;
-import javax.imageio.stream.FileImageOutputStream;
-import javax.imageio.stream.ImageOutputStream;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,8 +23,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -83,7 +74,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
                 Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
 
-                File gif = saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID) + "-" + tsUID);
+                File gif = MiscUtils.saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID) + "-" + tsUID);
 
                 PrintWriter printWriter = response.getWriter();
 
@@ -123,7 +114,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
         response.setContentType("image/png");
 
-        InputStream inputStream = extractImageInputStream(dicomInputStream, dicomObject);
+        InputStream inputStream = MiscUtils.extractImageInputStream(dicomInputStream, dicomObject);
 
         BufferedOutputStream servletOutputStream = new BufferedOutputStream(response.getOutputStream());
 
@@ -134,105 +125,6 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
         servletOutputStream.close();
         inputStream.close();
 
-    }
-
-    /**
-     *
-     * @param dicomInputStream
-     * @param dicomObject is not expected to contain data, only the meta information
-     * @return
-     * @throws IOException
-     */
-    private static InputStream extractImageInputStream(DicomInputStream dicomInputStream, DicomObject dicomObject) throws IOException {
-
-
-        List<NewFormat> newFormatList = Arrays.asList(NewFormat.values());
-
-        List<String> newFormatListTsUids = newFormatList
-                .stream()
-                .map(NewFormat::getTransferSyntax)
-                .map(TransferSyntax::uid)
-                .collect(Collectors.toList()
-                );
-
-        BufferedImage dicomImage;
-        String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
-        boolean isMultiframe = dicomObject.getInt(Tag.NumberOfFrames) > 1;
-
-        if (newFormatListTsUids.contains(tsUID)) {// Case recent formats
-            // Parse format uid into format id
-            NewFormat chosenFormat = newFormatList
-                    .stream()
-                    .filter(newFormat -> newFormat.getTransferSyntax().uid().equals(tsUID))
-                    .findFirst()
-                    .orElseThrow(UnsupportedEncodingException::new);
-
-            if (!isMultiframe)
-                dicomImage = NewFormatsCodecs.decodeByteStream(
-                        dicomObject.getBytes(Tag.PixelData), chosenFormat
-                        );
-            else
-                dicomImage = NewFormatsCodecs.decodeByteStream(
-                        dicomObject.get(Tag.PixelData).getFragment(0), chosenFormat
-                );
-        } else if (!isMultiframe) {
-            dicomImage = DicomUtils.loadDicomImage(dicomInputStream, 0);
-        } else {
-
-            Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
-
-            File gif = saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID)
-                    + "-" + tsUID);
-
-            return Files.newInputStream(gif.toPath());
-
-        }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(dicomImage, "png", baos);
-
-        return new ByteArrayInputStream(baos.toByteArray());
-    }
-
-    /**
-     *
-     * @param frameIterator iterator with the images
-     * @param gifFileBaseName Name of the resulting gif file (w/o the .gif)
-     * @throws IOException
-     */
-    private static File saveToGif(Iterator<BufferedImage> frameIterator, String gifFileBaseName) throws IOException {
-
-        String resourcesUriPath = ImodecJettyPlugin.RESOURCES_URI.getPath();
-        File prefixDir = new File(resourcesUriPath);
-        if (!prefixDir.exists() && !prefixDir.mkdirs())
-                throw new NoSuchFileException("Could not create directory: " + prefixDir);
-        prefixDir.deleteOnExit();
-
-        File gif = new File(prefixDir + "/" + gifFileBaseName + ".gif");
-        if (gif.exists())
-            return gif;
-
-        if (!gif.exists() && !gif.createNewFile())
-            throw new AssertionError("Unexpected error!");
-        gif.deleteOnExit();
-
-        if (!frameIterator.hasNext())
-            throw new NullPointerException("No frames to iterate over!");
-        BufferedImage firstFrame = frameIterator.next();
-
-        ImageOutputStream fileOutputStream = new FileImageOutputStream(gif);
-
-        GifSequenceWriter writer = new GifSequenceWriter(fileOutputStream,
-                firstFrame.getType(), 50, true);
-
-        writer.writeToSequence(firstFrame);
-        while (frameIterator.hasNext())
-            writer.writeToSequence(frameIterator.next());
-
-        writer.close();
-        fileOutputStream.close();
-
-        return gif;
     }
 
     /**

@@ -11,7 +11,6 @@ import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.DicomUtils;
-import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.formats.Native;
@@ -19,9 +18,6 @@ import pt.ua.imodec.util.formats.NewFormat;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -74,7 +70,7 @@ public class ImodecStoragePlugin implements StorageInterface {
                     } catch (OutOfMemoryError ignored) {
                         logger.info("Large bitstream object encountered. " +
                                 "Changing approach for data retrieval...");
-                        return getInputStreamFromLarge(bos);
+                        return MiscUtils.getInputStreamFromLarge(bos);
                     }
                 }
 
@@ -108,21 +104,21 @@ public class ImodecStoragePlugin implements StorageInterface {
         try {
             if (chosenFormat instanceof NewFormat) {
 
-                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
+                DicomUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
 
             } else if (DicomUtils.isMultiFrame(dicomObject)
                     && encodeWithAllTS && zerothLevelRecursion) {
 
                 logger.warn("This is not memory optimized. Memory errors are prone to occur.");
-                File dicomObjectFile = ImageUtils.writeDicomObjectToTmpFile(dicomObject);
-                Iterator<DicomInputStream> dicomInputStreamIterator = ImageUtils.encodeIteratorDicomInputStreamWithAllTs(dicomObjectFile);
+                File dicomObjectFile = DicomUtils.writeDicomObjectToTmpFile(dicomObject);
+                Iterator<DicomInputStream> dicomInputStreamIterator = DicomUtils.encodeIteratorDicomInputStreamWithAllTs(dicomObjectFile);
                 while (dicomInputStreamIterator.hasNext()) {
                     store(dicomInputStreamIterator.next(), Native.UNCHANGED);
                 }
 
             } else if (encodeWithAllTS && zerothLevelRecursion) {  // Same as previous but single frame
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
-                Iterator<DicomObject> dicomObjectsIterator = ImageUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
+                Iterator<DicomObject> dicomObjectsIterator = DicomUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
                 while (dicomObjectsIterator.hasNext()) {
                     store(dicomObjectsIterator.next(), Native.UNCHANGED);
                 }
@@ -142,30 +138,6 @@ public class ImodecStoragePlugin implements StorageInterface {
         logger.info("Object successfully stored!");
 
         return uri;
-    }
-
-    /**
-     *
-     * @param bos Large output stream
-     * @return Input stream
-     */
-    private static InputStream getInputStreamFromLarge(ByteArrayOutputStream bos) throws IOException {
-        File file = new File(
-                String.format("%s/blobs_%s.tmp", ImodecPluginSet.TMP_DIR_PATH, Date.from(Instant.now())));
-
-        if (!file.getParentFile().exists() && !file.getParentFile().mkdir())
-            throw new IOException("Could not create dir: " + ImodecPluginSet.TMP_DIR_PATH);
-
-        if (!file.createNewFile())
-            throw new FileAlreadyExistsException("File -> "+file.getName());
-
-        FileOutputStream fileOutputStream = new FileOutputStream(file);
-        bos.writeTo(fileOutputStream);
-        InputStream inputStream = Files.newInputStream(file.toPath());
-
-        file.deleteOnExit();
-
-        return inputStream;
     }
 
     private URI getUri(DicomObject dicomObject) {
