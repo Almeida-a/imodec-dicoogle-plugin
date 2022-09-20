@@ -72,11 +72,17 @@
             <artifactId>servlet</artifactId>
             <version>3.8.3</version>
         </dependency>
-<!--        &lt;!&ndash; https://mvnrepository.com/artifact/org.dcm4che/dcm4che-imageio &ndash;&gt;-->
+        <!-- https://mvnrepository.com/artifact/org.dcm4che/dcm4che-imageio -->
+        <dependency>
+            <groupId>org.dcm4che</groupId>
+            <artifactId>dcm4che-imageio</artifactId>
+            <version>${dcm4che.version}</version>
+        </dependency>
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.jiechic.library/Japng &ndash;&gt;-->
 <!--        <dependency>-->
-<!--            <groupId>org.dcm4che</groupId>-->
-<!--            <artifactId>dcm4che-imageio</artifactId>-->
-<!--            <version>${dcm4che.version}</version>-->
+<!--            <groupId>com.jiechic.library</groupId>-->
+<!--            <artifactId>Japng</artifactId>-->
+<!--            <version>0.5.1</version>-->
 <!--        </dependency>-->
     </dependencies>
 

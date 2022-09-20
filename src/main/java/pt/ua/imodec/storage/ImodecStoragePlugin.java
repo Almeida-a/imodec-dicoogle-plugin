@@ -1,5 +1,6 @@
 package pt.ua.imodec.storage;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;
@@ -10,6 +11,7 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
+import pt.ua.imodec.util.DicomUtils;
 import pt.ua.imodec.util.ImageUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.formats.Format;
@@ -35,7 +37,7 @@ public class ImodecStoragePlugin implements StorageInterface {
     private static final Logger logger = LoggerFactory.getLogger(ImodecStoragePlugin.class);
     private static final String scheme = "imodec-mem";
 
-    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();
+    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();  // TODO: 16/09/22 Optimize: Refactor BAOS to OS, to allow for using other output streams - very good for memory optimization
     private boolean enabled = true;
     private ConfigurationHolder settings;
 
@@ -97,17 +99,29 @@ public class ImodecStoragePlugin implements StorageInterface {
         }
 
         logger.info("Waiting while format is being set");
-
         Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
         MiscUtils.sleepWhile(choosingProcess);
         Format chosenFormat = ImodecPluginSet.chosenFormat;
+        boolean encodeWithAllTS = chosenFormat.getId().equals("all");
+        boolean zerothLevelRecursion = objects.length == 0;
+
 
         try {
             if (chosenFormat instanceof NewFormat) {
 
                 ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
 
-            } else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+            } else if (DicomUtils.isMultiFrame(dicomObject)
+                    && encodeWithAllTS && zerothLevelRecursion) {
+
+                logger.warn("This is not memory optimized. Memory errors are prone to occur.");
+                File dicomObjectFile = ImageUtils.writeDicomObjectToTmpFile(dicomObject);
+                Iterator<DicomInputStream> dicomInputStreamIterator = ImageUtils.encodeIteratorDicomInputStreamWithAllTs(dicomObjectFile);
+                while (dicomInputStreamIterator.hasNext()) {
+                    store(dicomInputStreamIterator.next(), Native.UNCHANGED);
+                }
+
+            } else if (encodeWithAllTS && zerothLevelRecursion) {  // Same as previous but single frame
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
                 Iterator<DicomObject> dicomObjectsIterator = ImageUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
                 while (dicomObjectsIterator.hasNext()) {
@@ -125,8 +139,8 @@ public class ImodecStoragePlugin implements StorageInterface {
         } catch (IOException ex) {
             logger.warn("Failed to store object", ex);
         }
-//        bos.toByteArray();
         mem.put(uri.toString(), bos);
+        logger.info("Object successfully stored!");
 
         return uri;
     }
@@ -134,8 +148,7 @@ public class ImodecStoragePlugin implements StorageInterface {
     /**
      *
      * @param bos Large output stream
-     * @return
-     * @throws IOException
+     * @return Input stream
      */
     private static InputStream getInputStreamFromLarge(ByteArrayOutputStream bos) throws IOException {
         File file = new File(
@@ -159,11 +172,12 @@ public class ImodecStoragePlugin implements StorageInterface {
     private URI getUri(DicomObject dicomObject) {
 
         String tsUID;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
 
-        if (ImodecPluginSet.chosenFormat.equals(Native.UNCHANGED))
+        if (chosenFormat.equals(Native.UNCHANGED) || chosenFormat.getId().equals("all"))
             tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
         else
-            tsUID = ImodecPluginSet.chosenFormat.getTransferSyntax().uid();
+            tsUID = chosenFormat.getTransferSyntax().uid();
 
         return URI.create(getScheme() + "://"
                 + dicomObject.getString(Tag.SOPInstanceUID) + "/"
@@ -172,7 +186,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public URI store(DicomInputStream dicomInputStream, Object... objects) throws IOException {
-        return store(dicomInputStream.readDicomObject());
+        return store(dicomInputStream.readDicomObject(), objects);
     }
 
     @Override

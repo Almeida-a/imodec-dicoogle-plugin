@@ -10,12 +10,10 @@ import pt.ua.dicoogle.sdk.JettyPluginInterface;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
-import pt.ua.imodec.ImodecPluginSet;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 
 /**
  * Jetty Servlet plugin, based on bioinformatics-ua/dicoogle-plugin-sample

@@ -1,5 +1,6 @@
 package pt.ua.imodec.webservice;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.data.TransferSyntax;
@@ -72,10 +73,14 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
         boolean isMultiFrame = dicomObject.getInt(Tag.NumberOfFrames) > 1;
 
-        if (isMultiFrame) {
-            response.setContentType("text/html;charset=utf-8");
+        String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        Format chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
+                .filter(format -> format.getTransferSyntax().uid().equals(tsUID))
+                .findFirst()
+                .orElse(Native.UNCHANGED);
 
-            String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        if (isMultiFrame && chosenFormat.equals(Native.UNCHANGED)) {
+            response.setContentType("text/html;charset=utf-8");
 
             Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
 
@@ -92,14 +97,24 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
             printWriter.println("<body>");
             if (gifResource.isPresent() && gifResource.get().exists()) {
                 printWriter.printf("<img src=\"%s\" alt=\"Image failed!\"/>\n", gif.getName());  // FIXME: 16/09/22 Image always fails
-                printWriter.printf("<a href=\"%s\" >Copy and paste this link to view the image locally" +
+                printWriter.printf("<a href=\"%s\" >Copy and paste this link to view the image locally." +
                         "</a>\n", gifResource.get().getURL());
-            }
-            else {
+            } else {
                 logger.error("Gif file was not found!");
                 printWriter.println("Error code 500! Multi-frame image does not exist!");
             }
             printWriter.println("</body>");
+
+            return;
+        } else if (chosenFormat instanceof NewFormat) {
+            response.setContentType("text/html;charset=utf-8");
+
+            PrintWriter printWriter = response.getWriter();
+
+            String output = "Displaying multi-frame dicom encoded with recent formats is not yet supported!";
+
+            printWriter.printf("<head/><body>%s</body>\n", output);
+            logger.warn(output);
 
             return;
         }
@@ -159,7 +174,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
                         dicomObject.get(Tag.PixelData).getFragment(0), chosenFormat
                 );
         } else if (!isMultiframe) {
-            dicomImage = ImageUtils.loadDicomImage(dicomInputStream, 0);
+            dicomImage = DicomUtils.loadDicomImage(dicomInputStream, 0);
         } else {
 
             Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
@@ -265,7 +280,7 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
                         throw new RuntimeException(e);
                     }
                 }).findFirst()
-                .orElseThrow(NoSuchElementException::new)
+                .orElseThrow(NoSuchElementException::new) // TODO: 19/09/22 Give a better error message using logger perhaps
                 .getTransferSyntax().uid();
         return transferSyntaxUID;
     }

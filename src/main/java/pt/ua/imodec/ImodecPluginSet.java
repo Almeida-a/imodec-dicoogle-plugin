@@ -51,7 +51,14 @@ public class ImodecPluginSet implements PluginSet {
         this.jettyWeb = new ImodecJettyPlugin();
         this.storage = new ImodecStoragePlugin();
 
+        tmpMkdirs();
+
         logger.info("Imodec Plugin Set is ready");
+    }
+
+    private static void tmpMkdirs() {
+        if (!TMP_DIR_PATH.toFile().mkdirs())
+            logger.info("Could not create main tmp directory. It already exists");
     }
 
     @Override
