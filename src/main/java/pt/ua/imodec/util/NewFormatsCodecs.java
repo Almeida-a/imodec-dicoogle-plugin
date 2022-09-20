@@ -101,14 +101,16 @@ public class NewFormatsCodecs {
 
     private static BufferedImage decode(String inputFilePath, String formatExtension) throws IOException {
 
-        String decodedFileName = inputFilePath.replace(formatExtension, losslessFormat);
+        String decodedFileName = inputFilePath + "." + losslessFormat;
+        File decodedImageFile = new File(decodedFileName);
+        if (decodedImageFile.exists())
+            return ImageIO.read(decodedImageFile);
 
         String decodingCommand = getCodecCommand(inputFilePath, decodedFileName, formatExtension, false,
                 new HashMap<>());
 
         execute(decodingCommand);
 
-        File decodedImageFile = new File(decodedFileName);
         decodedImageFile.deleteOnExit();
 
         return ImageIO.read(decodedImageFile);

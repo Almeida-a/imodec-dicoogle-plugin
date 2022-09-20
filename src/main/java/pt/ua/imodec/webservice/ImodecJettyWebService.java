@@ -66,7 +66,6 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         ServletContext servletContext = request.getServletContext();
-        logger.info("Servlet Real Root Path: '{}'", servletContext.getRealPath("/"));
 
         DicomInputStream dicomInputStream = extractRequestedDicomFromStorage(request);
         DicomObject dicomObject = DicomUtils.readNonPixelData(extractRequestedDicomFromStorage(request));
@@ -79,45 +78,49 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
                 .findFirst()
                 .orElse(Native.UNCHANGED);
 
-        if (isMultiFrame && chosenFormat.equals(Native.UNCHANGED)) {
-            response.setContentType("text/html;charset=utf-8");
+        if (isMultiFrame) {
+            if (chosenFormat.equals(Native.UNCHANGED)) {
+                response.setContentType("text/html;charset=utf-8");
 
-            Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
+                Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
 
-            File gif = saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID) + "-" + tsUID);
+                File gif = saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID) + "-" + tsUID);
 
-            PrintWriter printWriter = response.getWriter();
+                PrintWriter printWriter = response.getWriter();
 
-            Optional<Resource> gifResource = Optional.ofNullable(
-                    Resource.newResource(servletContext.getResource("/" + gif.getName()))
-            );
+                Optional<Resource> gifResource = Optional.ofNullable(
+                        Resource.newResource(servletContext.getResource("/" + gif.getName()))
+                );
 
-            printWriter.println("<!DOCTYPE html>");
-            printWriter.println("<head/>");
-            printWriter.println("<body>");
-            if (gifResource.isPresent() && gifResource.get().exists()) {
-                printWriter.printf("<img src=\"%s\" alt=\"Image failed!\"/>\n", gif.getName());  // FIXME: 16/09/22 Image always fails
-                printWriter.printf("<a href=\"%s\" >Copy and paste this link to view the image locally." +
-                        "</a>\n", gifResource.get().getURL());
-            } else {
-                logger.error("Gif file was not found!");
-                printWriter.println("Error code 500! Multi-frame image does not exist!");
+                printWriter.println("<!DOCTYPE html>");
+                printWriter.println("<head/>");
+                printWriter.println("<body>");
+                if (gifResource.isPresent() && gifResource.get().exists()) {
+                    printWriter.printf("<img src=\"%s\" alt=\"Image failed!\"/>\n", gif.getName());  // FIXME: 16/09/22 Image always fails
+                    printWriter.printf("<a href=\"%s\" >Copy and paste this link to view the image locally." +
+                            "</a>\n", gifResource.get().getURL());
+                } else {
+                    logger.error("Gif file was not found!");
+                    printWriter.println("Error code 500! Multi-frame image does not exist!");
+                }
+                printWriter.println("</body>");
+
+                return;
+            } else if (chosenFormat instanceof NewFormat) {
+                response.setContentType("text/html;charset=utf-8");
+
+                PrintWriter printWriter = response.getWriter();
+
+                String output = "Displaying multi-frame dicom encoded with recent formats is not yet supported!";
+
+                printWriter.printf("<head/><body>%s</body>\n", output);
+                logger.warn(output);
+
+                return;
             }
-            printWriter.println("</body>");
-
-            return;
-        } else if (chosenFormat instanceof NewFormat) {
-            response.setContentType("text/html;charset=utf-8");
-
-            PrintWriter printWriter = response.getWriter();
-
-            String output = "Displaying multi-frame dicom encoded with recent formats is not yet supported!";
-
-            printWriter.printf("<head/><body>%s</body>\n", output);
-            logger.warn(output);
-
-            return;
         }
+
+        dicomObject = extractRequestedDicomFromStorage(request).readDicomObject();
 
         response.setContentType("image/png");
 
