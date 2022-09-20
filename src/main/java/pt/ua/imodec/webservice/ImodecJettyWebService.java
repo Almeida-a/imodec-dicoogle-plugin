@@ -1,6 +1,5 @@
 package pt.ua.imodec.webservice;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.data.TransferSyntax;

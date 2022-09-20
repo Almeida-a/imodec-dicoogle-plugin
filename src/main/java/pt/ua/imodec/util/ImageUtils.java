@@ -1,7 +1,6 @@
 package pt.ua.imodec.util;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.SerializationUtils;
 import org.dcm4che2.data.*;
 import org.dcm4che2.io.DicomInputStream;
@@ -17,8 +16,6 @@ import pt.ua.imodec.util.validators.OSValidator;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -90,22 +87,6 @@ public class ImageUtils {
 
         return imageWriterIterator.next();
 
-    }
-
-    public static ImageWriter getImageWriter(String formatName) {
-
-        Iterator<ImageWriter> imageWriterIterator = ImageIO.getImageWritersByFormatName(formatName);
-
-        if (!imageWriterIterator.hasNext())
-            throw new NullPointerException(String.format("Format '%s' is not supported by ImageIO!", formatName));
-
-        return imageWriterIterator.next();
-
-    }
-
-    public static ImageOutputStream getImageOutputStream(String output) throws IOException {
-        File outfile = new File(output);
-        return ImageIO.createImageOutputStream(outfile);
     }
 
     public static void encodeDicomObject(
@@ -237,7 +218,7 @@ public class ImageUtils {
         updateLossyAttributes(dicomObject, chosenFormat, rawImageByteSize, compressedImageByteSize);
     }
 
-    public static Iterator<DicomObject> encodeIteratorDicomObjectWithAllTs(DicomObject dicomObject) throws IOException {
+    public static Iterator<DicomObject> encodeIteratorDicomObjectWithAllTs(DicomObject dicomObject) {
         if (dicomObject.contains(Tag.LossyImageCompression)
                 && dicomObject.getString(Tag.LossyImageCompression).equals("01"))
             throw new IllegalArgumentException("Cannot re-apply lossy compression to image!");
@@ -272,7 +253,7 @@ public class ImageUtils {
      * @param dicomObjectFile Assumed to be multi-frame
      * @return Iterator with input stream objects
      */
-    public static Iterator<DicomInputStream> encodeIteratorDicomInputStreamWithAllTs(File dicomObjectFile) throws IOException {
+    public static Iterator<DicomInputStream> encodeIteratorDicomInputStreamWithAllTs(File dicomObjectFile) {
 
         Iterator<NewFormat> newFormatIterator = Arrays.stream(NewFormat.values()).iterator();
 

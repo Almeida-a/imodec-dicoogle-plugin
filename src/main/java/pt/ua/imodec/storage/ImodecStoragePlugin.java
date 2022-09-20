@@ -1,6 +1,5 @@
 package pt.ua.imodec.storage;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;

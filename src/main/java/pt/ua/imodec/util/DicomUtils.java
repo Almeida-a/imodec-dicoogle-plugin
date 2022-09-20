@@ -69,7 +69,7 @@ public class DicomUtils {
     }
 
     static BufferedImage loadDicomEncodedFrame(DicomInputStream inputStream, int frameID, NewFormat newFormat) throws IOException {
-        // FIXME: 17/09/22 This readDicomObject is a OOM hazard.
+        // FIXME: 17/09/22 This readDicomObject is an OOM hazard.
         //  Use DicomInputStream to read the frames w/o loading them all to memory
 
         DicomObject dicomObject = inputStream.readDicomObject();

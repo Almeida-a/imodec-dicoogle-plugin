@@ -86,7 +86,7 @@ public class GifSequenceWriter {
         int loop = loopContinuously ? 0 : 1;
 
         child.setUserObject(new byte[]{ 0x1, (byte) (loop & 0xFF), (byte)
-                ((loop >> 8) & 0xFF)});
+                (0)});
         appEntensionsNode.appendChild(child);
 
         imageMetaData.setFromTree(metaFormatName, root);
