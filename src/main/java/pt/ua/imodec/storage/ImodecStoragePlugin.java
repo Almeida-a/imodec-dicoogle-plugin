@@ -10,21 +10,15 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.ImageUtils;
+import pt.ua.imodec.util.DicomUtils;
 import pt.ua.imodec.util.MiscUtils;
 import pt.ua.imodec.util.formats.Format;
 import pt.ua.imodec.util.formats.Native;
 import pt.ua.imodec.util.formats.NewFormat;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -38,7 +32,7 @@ public class ImodecStoragePlugin implements StorageInterface {
     private static final Logger logger = LoggerFactory.getLogger(ImodecStoragePlugin.class);
     private static final String scheme = "imodec-mem";
 
-    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();
+    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();  // TODO: 16/09/22 Optimize: Refactor BAOS to OS, to allow for using other output streams - very good for memory optimization
     private boolean enabled = true;
     private ConfigurationHolder settings;
 
@@ -63,7 +57,7 @@ public class ImodecStoragePlugin implements StorageInterface {
                 }
 
                 @Override
-                public InputStream getInputStream() {
+                public InputStream getInputStream() throws IOException {
                     ByteArrayOutputStream bos = mem.get(location.toString());
 
                     if (bos == null)
@@ -71,7 +65,13 @@ public class ImodecStoragePlugin implements StorageInterface {
                                 String.format("File uri='%s' was not found at the storage!", location)
                         );
 
-                    return new ByteArrayInputStream(bos.toByteArray());
+                    try {
+                        return new ByteArrayInputStream(bos.toByteArray());
+                    } catch (OutOfMemoryError ignored) {
+                        logger.info("Large bitstream object encountered. " +
+                                "Changing approach for data retrieval...");
+                        return MiscUtils.getInputStreamFromLarge(bos);
+                    }
                 }
 
                 @Override
@@ -94,21 +94,33 @@ public class ImodecStoragePlugin implements StorageInterface {
         }
 
         logger.info("Waiting while format is being set");
-
         Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
         MiscUtils.sleepWhile(choosingProcess);
         Format chosenFormat = ImodecPluginSet.chosenFormat;
+        boolean encodeWithAllTS = chosenFormat.getId().equals("all");
+        boolean zerothLevelRecursion = objects.length == 0;
+
 
         try {
             if (chosenFormat instanceof NewFormat) {
 
-                ImageUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
+                DicomUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
 
-            } else if (chosenFormat.getId().equals("all") && objects.length == 0) {
+            } else if (DicomUtils.isMultiFrame(dicomObject)
+                    && encodeWithAllTS && zerothLevelRecursion) {
+
+                logger.warn("This is not memory optimized. Memory errors are prone to occur.");
+                File dicomObjectFile = DicomUtils.writeDicomObjectToTmpFile(dicomObject);
+                Iterator<DicomInputStream> dicomInputStreamIterator = DicomUtils.encodeIteratorDicomInputStreamWithAllTs(dicomObjectFile);
+                while (dicomInputStreamIterator.hasNext()) {
+                    store(dicomInputStreamIterator.next(), Native.UNCHANGED);
+                }
+
+            } else if (encodeWithAllTS && zerothLevelRecursion) {  // Same as previous but single frame
                 // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
-                DicomObject[] dicomObjects = ImageUtils.encodeDicomObjectWithAllTs(dicomObject);
-                for (DicomObject dicomObject1 : dicomObjects) {
-                    store(dicomObject1, Native.UNCHANGED);
+                Iterator<DicomObject> dicomObjectsIterator = DicomUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
+                while (dicomObjectsIterator.hasNext()) {
+                    store(dicomObjectsIterator.next(), Native.UNCHANGED);
                 }
             }
         } catch (IOException e) {
@@ -122,21 +134,30 @@ public class ImodecStoragePlugin implements StorageInterface {
         } catch (IOException ex) {
             logger.warn("Failed to store object", ex);
         }
-        bos.toByteArray();
         mem.put(uri.toString(), bos);
+        logger.info("Object successfully stored!");
 
         return uri;
     }
 
     private URI getUri(DicomObject dicomObject) {
+
+        String tsUID;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
+
+        if (chosenFormat.equals(Native.UNCHANGED) || chosenFormat.getId().equals("all"))
+            tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        else
+            tsUID = chosenFormat.getTransferSyntax().uid();
+
         return URI.create(getScheme() + "://"
                 + dicomObject.getString(Tag.SOPInstanceUID) + "/"
-                + dicomObject.getString(Tag.TransferSyntaxUID));
+                + tsUID);
     }
 
     @Override
     public URI store(DicomInputStream dicomInputStream, Object... objects) throws IOException {
-        return store(dicomInputStream.readDicomObject());
+        return store(dicomInputStream.readDicomObject(), objects);
     }
 
     @Override

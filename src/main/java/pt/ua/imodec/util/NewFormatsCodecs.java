@@ -78,7 +78,7 @@ public class NewFormatsCodecs {
                     return String.format("cavif -o %s --quality %s --speed %s %s", outputPath, quality, speed,
                             inputPath);
                 }
-                return String.format("avif_decode %s %s", inputPath, outputPath);
+                return String.format("avif_decode -f %s %s", inputPath, outputPath);
             case "webp":
                 if (encoding) {
                     Number quality = options.getOrDefault("quality", NewFormat.WEBP.getQualityParamValue()),
@@ -93,7 +93,7 @@ public class NewFormatsCodecs {
     }
 
     public static BufferedImage decodeByteStream(byte[] bitstream, NewFormat chosenFormat) throws IOException {
-        String encodedFileName = String.format("%s/%s.%s", ImodecPluginSet.tmpDirPath,
+        String encodedFileName = String.format("%s/%s.%s", ImodecPluginSet.TMP_DIR_PATH,
                 Arrays.hashCode(bitstream), chosenFormat.getFileExtension());
         Files.write(Paths.get(encodedFileName), bitstream);
         return decode(encodedFileName, chosenFormat.getFileExtension());
@@ -102,13 +102,15 @@ public class NewFormatsCodecs {
     private static BufferedImage decode(String inputFilePath, String formatExtension) throws IOException {
 
         String decodedFileName = inputFilePath.replace(formatExtension, losslessFormat);
+        File decodedImageFile = new File(decodedFileName);
+        if (decodedImageFile.exists())
+            return ImageIO.read(decodedImageFile);
 
         String decodingCommand = getCodecCommand(inputFilePath, decodedFileName, formatExtension, false,
                 new HashMap<>());
 
         execute(decodingCommand);
 
-        File decodedImageFile = new File(decodedFileName);
         decodedImageFile.deleteOnExit();
 
         return ImageIO.read(decodedImageFile);

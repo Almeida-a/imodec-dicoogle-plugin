@@ -16,7 +16,8 @@
         <dicoogle.version>3.1.0</dicoogle.version>
         <jetty.version>9.4.48.v20220622</jetty.version>
         <dcm4che.version>5.27.0</dcm4che.version>
-        <snakeyaml.version>1.31</snakeyaml.version>
+        <snakeyaml.version>1.32</snakeyaml.version>
+        <jaidcm4che.version>1.1</jaidcm4che.version>
     </properties>
 
     <dependencies>
@@ -32,18 +33,57 @@
             <artifactId>jetty-rewrite</artifactId>
             <version>${jetty.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.dcm4che/dcm4che-core -->
-        <dependency>
-            <groupId>org.dcm4che</groupId>
-            <artifactId>dcm4che-core</artifactId>
-            <version>${dcm4che.version}</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.yaml/snakeyaml -->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${snakeyaml.version}</version>
         </dependency>
+        <dependency>
+            <groupId>jaidcm4che</groupId>
+            <artifactId>jai_imageio</artifactId>
+            <version>1.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>jai_core</groupId>
+                    <artifactId>javax.media</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-core -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <version>3.8.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-jpeg -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.8.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.servlet</groupId>
+            <artifactId>servlet</artifactId>
+            <version>3.8.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.dcm4che/dcm4che-imageio -->
+        <dependency>
+            <groupId>org.dcm4che</groupId>
+            <artifactId>dcm4che-imageio</artifactId>
+            <version>${dcm4che.version}</version>
+        </dependency>
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.jiechic.library/Japng &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.jiechic.library</groupId>-->
+<!--            <artifactId>Japng</artifactId>-->
+<!--            <version>0.5.1</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
