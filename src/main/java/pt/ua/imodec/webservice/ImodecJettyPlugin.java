@@ -3,12 +3,17 @@ package pt.ua.imodec.webservice;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.dicoogle.sdk.JettyPluginInterface;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 
 /**
  * Jetty Servlet plugin, based on bioinformatics-ua/dicoogle-plugin-sample
@@ -19,6 +24,8 @@ import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 public class ImodecJettyPlugin implements JettyPluginInterface, PlatformCommunicatorInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ImodecJettyPlugin.class);
+    public static final URI RESOURCES_URI = new File("tmp/").toURI();
+    public static final String CONTEXT_PATH = "/imodec";
     private final ImodecJettyWebService webService;
     private boolean enabled;
     private ConfigurationHolder settings;
@@ -77,7 +84,16 @@ public class ImodecJettyPlugin implements JettyPluginInterface, PlatformCommunic
     public HandlerList getJettyHandlers() {
 
         ServletContextHandler handler = new ServletContextHandler();
-        handler.setContextPath("/imodec");
+        handler.setContextPath(CONTEXT_PATH);
+
+        logger.debug("Creating base resource...");
+        try {
+            Resource resource = Resource.newResource(RESOURCES_URI);
+            handler.setBaseResource(resource);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         handler.addServlet(new ServletHolder(this.webService), "/view");
         // Example: path to access this servlet? example below
         // GET http://localhost:8080/imodec/view?param=value

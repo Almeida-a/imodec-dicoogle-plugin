@@ -1,75 +1,73 @@
 package pt.ua.imodec.util;
 
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.data.VR;
+import org.apache.commons.io.FileUtils;
+import org.dcm4che2.data.*;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pt.ua.imodec.util.validators.OSValidator;
+import pt.ua.imodec.ImodecPluginSet;
+import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.util.formats.NewFormat;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class ImageUtils {
 
     public static final Logger logger = LoggerFactory.getLogger(ImageUtils.class);
 
-    /**
-     *
-     * Load dicom (buffered) image.
-     * Credits:
-     *  <a href="https://github.com/bioinformatics-ua/dicoogle/blob/0a5ab168a2c96dd3637c6fa222cdf04323a473ce/dicoogle
-     *  /src/main/java/pt/ua/dicoogle/server/web/utils/ImageLoader.java#L97-L106">Source</a>.
-     *
-     * @param inputStream Stream with the dicom data
-     * @return The buffered image
-     * @throws IOException if the image format is not DICOM or another IO issue occurred
-     */
-    public static BufferedImage loadDicomImage(DicomInputStream inputStream) throws IOException {
-        try (ImageInputStream imageInputStream = ImageIO.createImageInputStream(inputStream)) {
-            ImageReader reader = getImageReader("DICOM");
-            ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(imageInputStream, false);
-            BufferedImage image = reader.read(0, param);
-            if (image == null)
-                throw new NullPointerException("Error reading dicom image!");
-            return image;
-        }
-    }
+    public static BufferedImage loadDicomImage(DicomObject dicomObject, int frame) throws IOException {
 
-    public static BufferedImage loadDicomImage(DicomObject dicomObject) throws IOException {
-
-        String tmpDicomFileName = String.format("/tmp/imodec/ImageUtils/%s.dcm",
-                dicomObject.getString(Tag.SOPInstanceUID));
-        File tmpDicomFile = new File(tmpDicomFileName);
-        tmpDicomFile.deleteOnExit();
-
-        if (!DicomUtils.saveDicomFile(dicomObject, tmpDicomFile, true)) {
-            logger.warn("Hash collision in creating the tmp file. Overwriting...");
-        }
+        File tmpDicomFile = DicomUtils.saveDicomFile(dicomObject, true);
 
         DicomInputStream dicomInputStream = new DicomInputStream(tmpDicomFile);
 
-        return loadDicomImage(dicomInputStream);
+        return DicomUtils.loadDicomImage(dicomInputStream, frame);
     }
 
-    public static ImageWriter getImageWriter(String formatName) {
+    public static Iterator<BufferedImage> loadDicomImageIterator(DicomInputStream dicomInputStream) throws IOException {
 
-        Iterator<ImageWriter> imageWriterIterator = ImageIO.getImageWritersByFormatName(formatName);
+        File file = new File(ImodecPluginSet.TMP_DIR_PATH + "/loadIteratorTmp.dcm");
+        file.deleteOnExit();
+        FileUtils.copyInputStreamToFile(dicomInputStream, file);
 
-        if (!imageWriterIterator.hasNext())
-            throw new NullPointerException(String.format("Format '%s' is not supported by ImageIO!", formatName));
+        DicomObject meta = DicomUtils.readNonPixelData(new DicomInputStream(file));
 
-        return imageWriterIterator.next();
+        return new Iterator<BufferedImage>() {
 
+            private int i = 0;
+            private final int frames = meta.getInt(Tag.NumberOfFrames);
+            private final String transferSyntax = meta.getString(Tag.TransferSyntaxUID);
+            private final Format format = Arrays.stream((Format[]) NewFormat.values())
+                    .filter(format -> format.getTransferSyntax().uid().equals(transferSyntax))
+                    .findFirst()
+                    .orElse(Native.UNCHANGED);
+
+            @Override
+            public boolean hasNext() {
+                return i + 1 < frames;
+            }
+
+            @Override
+            public BufferedImage next() {
+                try {
+                    if (format instanceof NewFormat) {
+                        try (DicomInputStream inputStream = new DicomInputStream(file)) {
+                            return DicomUtils.loadDicomEncodedFrame(inputStream, i, (NewFormat) format);
+                        }
+                    }
+                    return DicomUtils.loadDicomImage(new DicomInputStream(file), i++);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     public static ImageReader getImageReader(String formatName) {
@@ -83,36 +81,4 @@ public class ImageUtils {
 
     }
 
-    public static void encodeDicomObject(DicomObject dicomObject, NewFormat chosenFormat) throws IOException {
-
-        logger.info("Encoding with recent formats...");
-
-        if (!OSValidator.validate())
-            throw new IllegalStateException(
-                    String.format("Unsupported OS: '%s' for Imodec storage plugin", System.getProperty("os.name"))
-            );
-
-        int rawImageByteSize = dicomObject.getBytes(Tag.PixelData).length;
-
-        // Change dicom object from uncompressed to JPEG XL, WebP or AVIF format
-        BufferedImage dicomImage = loadDicomImage(dicomObject);
-
-        String tmpFileName = String.format("/tmp/imodec/ImageUtils/%d.png", dicomImage.hashCode());
-        File tmpImageFile = new File(tmpFileName);
-        tmpImageFile.deleteOnExit();
-
-        ImageIO.write(dicomImage, "png", tmpImageFile);
-
-        byte[] bitstream = NewFormatsCodecs.encodePNGFile(tmpImageFile, chosenFormat);
-        int compressedImageByteSize = bitstream.length;
-
-        // Adding the new data into the dicom object
-        dicomObject.putBytes(Tag.PixelData, VR.OB, bitstream);
-        // Change parameters other than pixel-data (lossy compression, transfer syntax, ...)
-        dicomObject.putString(Tag.TransferSyntaxUID, VR.UI, chosenFormat.getTransferSyntax().uid());
-        dicomObject.putString(Tag.LossyImageCompression, VR.CS, "01");
-        dicomObject.putString(Tag.LossyImageCompressionRatio, VR.DS, String.valueOf(rawImageByteSize / compressedImageByteSize));
-        dicomObject.putString(Tag.LossyImageCompressionMethod, VR.CS, chosenFormat.getMethod());
-
-    }
 }

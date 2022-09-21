@@ -2,28 +2,27 @@ package pt.ua.imodec.webservice;
 
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
-import org.dcm4che2.data.TransferSyntax;
 import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.DicomOutputStream;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pt.ua.dicoogle.sdk.QueryInterface;
 import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
-import pt.ua.dicoogle.sdk.datastructs.SearchResult;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
-import pt.ua.imodec.util.ImageUtils;
-import pt.ua.imodec.util.NewFormat;
-import pt.ua.imodec.util.NewFormatsCodecs;
+import pt.ua.imodec.util.*;
+import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.util.formats.NewFormat;
 
-import javax.imageio.ImageIO;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,8 @@ import java.util.stream.Collectors;
 public class ImodecJettyWebService extends HttpServlet implements PlatformCommunicatorInterface {
     private static final Logger logger = LoggerFactory.getLogger(ImodecJettyWebService.class);
     private static final String sopInstanceUIDParameterName = "siuid";
+    private static final String transferSyntaxUIDParameterName = "tsuid";
+    private static final String formatIdParameterName = "codec";
     public static final String storageScheme = new ImodecStoragePlugin().getScheme();
 
     private DicooglePlatformInterface platform;
@@ -54,45 +55,71 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
+        ServletContext servletContext = request.getServletContext();
+
         DicomInputStream dicomInputStream = extractRequestedDicomFromStorage(request);
-        DicomObject dicomObject = extractRequestedDicomFromStorage(request).readDicomObject();
+        DicomObject dicomObject = DicomUtils.readNonPixelData(extractRequestedDicomFromStorage(request));
+
+        boolean isMultiFrame = dicomObject.getInt(Tag.NumberOfFrames) > 1;
+
+        String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        Format chosenFormat = Arrays.stream(((Format[]) NewFormat.values()))
+                .filter(format -> format.getTransferSyntax().uid().equals(tsUID))
+                .findFirst()
+                .orElse(Native.UNCHANGED);
+
+        if (isMultiFrame) {
+            if (chosenFormat.equals(Native.UNCHANGED)) {
+                response.setContentType("text/html;charset=utf-8");
+
+                Iterator<BufferedImage> frameIterator = ImageUtils.loadDicomImageIterator(dicomInputStream);
+
+                File gif = MiscUtils.saveToGif(frameIterator, dicomObject.getString(Tag.SOPInstanceUID) + "-" + tsUID);
+
+                PrintWriter printWriter = response.getWriter();
+
+                Optional<Resource> gifResource = Optional.ofNullable(
+                        Resource.newResource(servletContext.getResource("/" + gif.getName()))
+                );
+
+                printWriter.println("<!DOCTYPE html>");
+                printWriter.println("<head/>");
+                printWriter.println("<body>");
+                if (gifResource.isPresent() && gifResource.get().exists()) {
+                    printWriter.printf("<img src=\"%s\" alt=\"Image failed!\"/>\n", gif.getName());  // FIXME: 16/09/22 Image always fails
+                    printWriter.printf("<a href=\"%s\" >Copy and paste this link to view the image locally." +
+                            "</a>\n", gifResource.get().getURL());
+                } else {
+                    logger.error("Gif file was not found!");
+                    printWriter.println("Error code 500! Multi-frame image does not exist!");
+                }
+                printWriter.println("</body>");
+
+                return;
+            } else if (chosenFormat instanceof NewFormat) {
+                response.setContentType("text/html;charset=utf-8");
+
+                PrintWriter printWriter = response.getWriter();
+
+                String output = "Displaying multi-frame dicom encoded with recent formats is not yet supported!";
+
+                printWriter.printf("<head/><body>%s</body>\n", output);
+                logger.warn(output);
+
+                return;
+            }
+        }
+
+        dicomObject = extractRequestedDicomFromStorage(request).readDicomObject();
 
         response.setContentType("image/png");
 
-        List<NewFormat> newFormatList = Arrays.asList(NewFormat.values());
+        InputStream inputStream = MiscUtils.extractImageInputStream(dicomInputStream, dicomObject);
 
-        List<String> newFormatListTsUids = newFormatList
-                .stream()
-                .map(NewFormat::getTransferSyntax)
-                .map(TransferSyntax::uid)
-                .collect(Collectors.toList()
-        );
-
-        BufferedImage dicomImage;
-        String tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
-
-        if (newFormatListTsUids.contains(tsUID)) {// Case recent formats
-            // Parse format uid into format id
-            NewFormat chosenFormat = newFormatList
-                    .stream()
-                    .filter(newFormat -> newFormat.getTransferSyntax().uid().equals(tsUID))
-                    .findFirst().get();
-
-            dicomImage = NewFormatsCodecs.decodeByteStream(
-                    dicomObject.getBytes(Tag.PixelData), chosenFormat
-                    );
-        }
-        else
-            dicomImage = ImageUtils.loadDicomImage(dicomInputStream);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(dicomImage, "png", baos);
-
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(baos.toByteArray());
         BufferedOutputStream servletOutputStream = new BufferedOutputStream(response.getOutputStream());
 
         int ch;
-        while ((ch=inputStream.read()) != -1)
+        while ((ch = inputStream.read()) != -1)
             servletOutputStream.write(ch);
 
         servletOutputStream.close();
@@ -100,11 +127,59 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
 
     }
 
+    /**
+     * Analyzes the request and returns the associated dicom object
+     *
+     * @param request
+     * @return
+     * @throws IOException
+     */
     private DicomInputStream extractRequestedDicomFromStorage(HttpServletRequest request) throws IOException {
-        String sopInstanceUID = request.getParameter(sopInstanceUIDParameterName);
+        String sopInstanceUID = request.getParameter(sopInstanceUIDParameterName),
+                transferSyntaxUID = request.getParameter(transferSyntaxUIDParameterName),
+                codecId = request.getParameter(formatIdParameterName);
 
-        URI uri = URI.create(storageScheme + "://" + sopInstanceUID);
+        if (transferSyntaxUID == null && codecId != null) {
+            Format format = Arrays.stream((Format[]) (NewFormat.values()))
+                    .filter(newFormat -> newFormat.getId().equals(codecId))
+                    .findFirst()
+                    .orElse(Native.UNCHANGED);
 
+            transferSyntaxUID = format.getTransferSyntax().uid();
+        } else if (transferSyntaxUID == null)
+            transferSyntaxUID = findNativeVersionTS(sopInstanceUID);
+
+        URI uri = URI.create(storageScheme + "://" + sopInstanceUID + "/" + transferSyntaxUID);
+
+        return getDicomInputStream(uri);
+    }
+
+    private String findNativeVersionTS(String sopInstanceUID) {
+        String transferSyntaxUID;
+        Collection<Native> nativeUIDs = Arrays.stream(Native.values())
+                .filter(aNative -> aNative.getTransferSyntax() != null)
+                .collect(Collectors.toList());
+
+        String imodecStorageScheme = new ImodecStoragePlugin().getScheme();
+        ImodecStoragePlugin imodecStorage = ((ImodecStoragePlugin) this.platform.getStorageForSchema(imodecStorageScheme));
+
+        transferSyntaxUID = nativeUIDs.stream().filter(aNative -> {
+                    try {
+                        return imodecStorage.containsURI(
+                                new URI(String.format("%s://%s/%s",
+                                        imodecStorageScheme, sopInstanceUID, aNative.getTransferSyntax().uid())
+                                )
+                        );
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).findFirst()
+                .orElseThrow(NoSuchElementException::new) // TODO: 19/09/22 Give a better error message using logger perhaps
+                .getTransferSyntax().uid();
+        return transferSyntaxUID;
+    }
+
+    private DicomInputStream getDicomInputStream(URI uri) throws IOException {
         Iterable<StorageInputStream> files = this.platform.getStorageForSchema(uri).at(uri);
 
         Iterator<StorageInputStream> storageInputStreamIterator = files.iterator();
@@ -112,25 +187,6 @@ public class ImodecJettyWebService extends HttpServlet implements PlatformCommun
         InputStream inputStream = storageInputStreamIterator.next().getInputStream();
 
         return new DicomInputStream(inputStream);
-    }
-
-    private DicomInputStream extractRequestedDicomFromIndex(HttpServletRequest request) throws IOException {
-
-        String SOPInstanceUID = request.getParameter("uid");
-
-        QueryInterface dimProvider = this.platform.getQueryProviderByName("lucene", true);
-        Iterator<SearchResult> results = dimProvider.query("SOPInstanceUID:" + SOPInstanceUID).iterator();
-
-        if (!results.hasNext())
-            throw new NoSuchElementException("No dicom file found!");
-
-        SearchResult res = results.next();
-        URI uri = res.getURI();
-
-        if (uri == null)
-            throw new NullPointerException("Null uri for the requested dicom object!");
-
-        return new DicomInputStream(new File(uri));
     }
 
     @Override

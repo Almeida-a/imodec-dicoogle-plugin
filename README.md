@@ -3,6 +3,20 @@ Imodec (Image [Modern] Codecs) is a set of plugins
 for the [Dicoogle](https://github.com/bioinformatics-ua/dicoogle/)
 project providing the services of modern image compression codecs.
 
+## Table of contents
+1. [Building from source](#building-from-source)
+2. [How to use](#how-to-use)
+   1. [Pre-requisites](#pre-requisites)
+   2. [Plugging into dicoogle](#plugging-into-dicoogle)
+   3. [Store-SCU operation](#store-scu-operation)
+      1. [storescu - dcmtk](#storescu---dcmtk)
+      2. [dicom-storescu - dicom-rs](#dicom-storescu---dicom-rs)
+   4. [View the resulting images](#view-the-resulting-images)
+      1. [Http Request Structure](#http-request-structure)
+3. [Other Notes](#other-notes)
+   1. [New transfer syntaxes](#new-transfer-syntaxes)
+   2. [Contributing](#contributing)
+   3. [Configuring encoding options](#configuring-encoding-options)
 
 ## Building from source
 If you want, you can build from source using the `mvn`
@@ -57,7 +71,9 @@ xml settings file (path `Plugins/settings/imodec-plugin-set.xml`):
     <codec>jxl</codec>
 </configuration>
 ```
-Possible values are: `jxl`, `avif` and `webp`.
+Possible values are: `jxl`, `avif`, `webp`, `keep` and `all` for all the previous options simultaneously.
+
+Note: Multi-frame images are not expected to work in the `all` setting. 
 
 
 You need to use a specific tool for the store operation.
@@ -92,6 +108,52 @@ In order to check the stored images, you need to
 input an url to your browser with the
 SOP Instance UID of the respective dicom object,
 following the next example:
+```http request
+http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347&codec=jxl
 ```
-http://localhost:8080/imodec/view?siuid=2.25.69906150082773205181031737615574603347
+
+#### Http request structure
+Base url:
+```http request
+http://localhost:8080/imodec/view
+```
+
+Parameters:
+ * `siuid` [Required]: SOP Instance UID of the dicom object's image to be viewed.
+ * `tsuid` [Optional]: Transfer Syntax UID defining a version of the dicom object in a specific format.
+ * `codec` [Optional]: If you want to see the image of a specific modern format, choose here which format that 
+you want to see. This is the same as choosing the [transfer syntax](#new-transfer-syntaxes) of that specific codec with the
+above parameter. If both are used, `tsuid` overrides `codec`.
+
+
+## Other Notes
+
+### New Transfer Syntaxes
+
+The new image formats will encode the pixel data of the dicom objects.
+The transfer syntaxes define the format of the pixel-data of the dicom objects.
+Thus, new transfer syntaxes are created to define pixel-data with the bitstream of those modern codecs.
+
+New Transfer-Syntax list:
+ * JPEG-XL: `1.2.826.0.1.3680043.2.682.104.1`
+ * WebP: `1.2.826.0.1.3680043.2.682.104.2`
+ * AVIF: `1.2.826.0.1.3680043.2.682.104.3`
+
+### Contributing
+This project encompasses developing a set of plugins for the dicoogle software. Therefore, for anyone interested in contributing, imodec follows the [dicoogle development guidelines](https://github.com/bioinformatics-ua/dicoogle/wiki#development-guidelines).
+
+### Configuring encoding options
+
+This is a more advanced configuration.
+You can define encoding options such as quality or speed of compression
+(depending on the name of the configuration parameters).
+
+An example of those options is displayed below:
+```xml
+<configurations>
+   ...
+   <jxl distance="1.0" effort="7" />
+   <avif quality="90" speed="4" />
+   <webp quality="90" speed="4" />
+</configurations>
 ```

@@ -10,35 +10,39 @@ import pt.ua.dicoogle.sdk.StorageInputStream;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.ImageUtils;
+import pt.ua.imodec.util.DicomUtils;
 import pt.ua.imodec.util.MiscUtils;
-import pt.ua.imodec.util.NewFormat;
+import pt.ua.imodec.util.formats.Format;
+import pt.ua.imodec.util.formats.Native;
+import pt.ua.imodec.util.formats.NewFormat;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
  *
- * Basic Storage Plugin
+ * Storage Plugin
  *  - "Template" from rlebre/dicoogle-plugin-sample
  * <p>
  * */
 public class ImodecStoragePlugin implements StorageInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ImodecStoragePlugin.class);
+    private static final String scheme = "imodec-mem";
 
-    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();
+    private final HashMap<String, ByteArrayOutputStream> mem = new HashMap<>();  // TODO: 16/09/22 Optimize: Refactor BAOS to OS, to allow for using other output streams - very good for memory optimization
     private boolean enabled = true;
     private ConfigurationHolder settings;
 
     @Override
     public String getScheme() {
-        return "imodec-mem";
+        return scheme;
+    }
+
+    public boolean containsURI(final URI uri) {
+        return mem.containsKey(uri.toString());
     }
 
     @Override
@@ -53,7 +57,7 @@ public class ImodecStoragePlugin implements StorageInterface {
                 }
 
                 @Override
-                public InputStream getInputStream() {
+                public InputStream getInputStream() throws IOException {
                     ByteArrayOutputStream bos = mem.get(location.toString());
 
                     if (bos == null)
@@ -61,7 +65,13 @@ public class ImodecStoragePlugin implements StorageInterface {
                                 String.format("File uri='%s' was not found at the storage!", location)
                         );
 
-                    return new ByteArrayInputStream(bos.toByteArray());
+                    try {
+                        return new ByteArrayInputStream(bos.toByteArray());
+                    } catch (OutOfMemoryError ignored) {
+                        logger.info("Large bitstream object encountered. " +
+                                "Changing approach for data retrieval...");
+                        return MiscUtils.getInputStreamFromLarge(bos);
+                    }
                 }
 
                 @Override
@@ -77,20 +87,42 @@ public class ImodecStoragePlugin implements StorageInterface {
     @Override
     public URI store(DicomObject dicomObject, Object... objects) {
 
-        logger.warn("Waiting while format is being set");
-
-        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
-        MiscUtils.sleepWhile(choosingProcess);
-        NewFormat chosenFormat = ImodecPluginSet.chosenFormat;
-
-        URI uri = URI.create(getScheme() + "://" + dicomObject.getString(Tag.SOPInstanceUID));
+        URI uri = getUri(dicomObject);
         if (mem.containsKey(uri.toString())) {
             logger.warn("This object was already stored!");
             return uri;
         }
 
+        logger.info("Waiting while format is being set");
+        Supplier<Boolean> choosingProcess = () -> ImodecPluginSet.chosenFormat == null;
+        MiscUtils.sleepWhile(choosingProcess);
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
+        boolean encodeWithAllTS = chosenFormat.getId().equals("all");
+        boolean zerothLevelRecursion = objects.length == 0;
+
+
         try {
-            ImageUtils.encodeDicomObject(dicomObject, chosenFormat);
+            if (chosenFormat instanceof NewFormat) {
+
+                DicomUtils.encodeDicomObject(dicomObject, (NewFormat) chosenFormat, new HashMap<>());
+
+            } else if (DicomUtils.isMultiFrame(dicomObject)
+                    && encodeWithAllTS && zerothLevelRecursion) {
+
+                logger.warn("This is not memory optimized. Memory errors are prone to occur.");
+                File dicomObjectFile = DicomUtils.writeDicomObjectToTmpFile(dicomObject);
+                Iterator<DicomInputStream> dicomInputStreamIterator = DicomUtils.encodeIteratorDicomInputStreamWithAllTs(dicomObjectFile);
+                while (dicomInputStreamIterator.hasNext()) {
+                    store(dicomInputStreamIterator.next(), Native.UNCHANGED);
+                }
+
+            } else if (encodeWithAllTS && zerothLevelRecursion) {  // Same as previous but single frame
+                // TODO: 03/09/22 Find a better way for stopping condition than by the number of argument objects
+                Iterator<DicomObject> dicomObjectsIterator = DicomUtils.encodeIteratorDicomObjectWithAllTs(dicomObject);
+                while (dicomObjectsIterator.hasNext()) {
+                    store(dicomObjectsIterator.next(), Native.UNCHANGED);
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -102,15 +134,30 @@ public class ImodecStoragePlugin implements StorageInterface {
         } catch (IOException ex) {
             logger.warn("Failed to store object", ex);
         }
-        bos.toByteArray();
         mem.put(uri.toString(), bos);
+        logger.info("Object successfully stored!");
 
         return uri;
     }
 
+    private URI getUri(DicomObject dicomObject) {
+
+        String tsUID;
+        Format chosenFormat = ImodecPluginSet.chosenFormat;
+
+        if (chosenFormat.equals(Native.UNCHANGED) || chosenFormat.getId().equals("all"))
+            tsUID = dicomObject.getString(Tag.TransferSyntaxUID);
+        else
+            tsUID = chosenFormat.getTransferSyntax().uid();
+
+        return URI.create(getScheme() + "://"
+                + dicomObject.getString(Tag.SOPInstanceUID) + "/"
+                + tsUID);
+    }
+
     @Override
     public URI store(DicomInputStream dicomInputStream, Object... objects) throws IOException {
-        return store(dicomInputStream.readDicomObject());
+        return store(dicomInputStream.readDicomObject(), objects);
     }
 
     @Override
@@ -120,7 +167,7 @@ public class ImodecStoragePlugin implements StorageInterface {
 
     @Override
     public String getName() {
-        return "imodec-storage";
+        return "imodec-storage-plugin";
     }
 
     @Override
