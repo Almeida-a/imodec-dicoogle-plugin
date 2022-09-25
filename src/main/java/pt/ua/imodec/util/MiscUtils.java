@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
 import javax.imageio.ImageIO;
@@ -49,6 +49,14 @@ public class MiscUtils {
         return file.createNewFile();
     }
 
+    /**
+     * Sleep while the provided condition is true.
+     *  The program re-checks if the condition is true after 100ms
+     * @param booleanSupplier Expression to be periodically evaluated.
+     *                        Note: This is a supplier instead of a boolean because a boolean is just
+     *                        a static variable, and thus, would have a static value. On the other hand, a boolean
+     *                        supplier is associated to an executable expression.
+     */
     public static void sleepWhile(Supplier<Boolean> booleanSupplier) {
         while (booleanSupplier.get()) {
             try {
@@ -59,12 +67,21 @@ public class MiscUtils {
         }
     }
 
+    /**
+     *
+     * @param formatId The format in its file extension form
+     * @return The default options of the encoder specified in "encoding-options.yaml"
+     */
     public static Map<String, Number> getOptions(String formatId) {
         Map<String, Map<String, Number>> options = getOptions();
 
         return options.get(formatId);
     }
 
+    /**
+     *
+     * @return A Map object containing the contents of "encoding-options.yaml"
+     */
     public static Map<String, Map<String, Number>> getOptions() {
         Yaml yaml = new Yaml();
 
@@ -76,6 +93,8 @@ public class MiscUtils {
     }
 
     public static Number gracefulCast(Number number, Class<? extends Number> toType) {
+        // TODO: 21/09/22 Find a way to refactor this into a switch statement
+
         if (Float.class.equals(toType))
             return number.floatValue();
         else if (Double.class.equals(toType))
@@ -97,7 +116,7 @@ public class MiscUtils {
      */
     public static InputStream getInputStreamFromLarge(ByteArrayOutputStream bos) throws IOException {
         File file = new File(
-                String.format("%s/blobs_%s.tmp", ImodecPluginSet.TMP_DIR_PATH, Date.from(Instant.now())));
+                String.format("%s/blobs_%s.tmp", ImodecPluginSet.TMP_DIR_PATH, Instant.now()));
 
         if (!file.getParentFile().exists() && !file.getParentFile().mkdir())
             throw new IOException("Could not create dir: " + ImodecPluginSet.TMP_DIR_PATH);
@@ -176,7 +195,7 @@ public class MiscUtils {
      *
      * @param frameIterator iterator with the images
      * @param gifFileBaseName Name of the resulting gif file (w/o the .gif)
-     * @throws IOException
+     * @throws IOException If an IO error occurs
      */
     public static File saveToGif(Iterator<BufferedImage> frameIterator, String gifFileBaseName) throws IOException {
 
@@ -213,11 +232,25 @@ public class MiscUtils {
         return gif;
     }
 
-//    public static String readHtml(File template) {
-//        try (FileInputStream fileInputStream = new FileInputStream(template)) {
-//            fileInputStream.wr
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    /**
+     * Clones the provided input stream
+     *
+     * @param inputStream original IS
+     * @return cloned IS (different object, same content)
+     * @throws IOException If an IO error occurs
+     */
+    public static InputStream cloneInputStream(InputStream inputStream) throws IOException {
+
+        int inputStreamSize = inputStream.available();
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(inputStreamSize);
+
+        byte[] data = new byte[inputStreamSize];
+
+        int ignored = inputStream.read(data);
+
+        byteArrayOutputStream.write(data);
+
+        return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+    }
 }

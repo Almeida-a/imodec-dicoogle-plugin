@@ -1,5 +1,6 @@
 package pt.ua.imodec.util;
 
+import org.apache.commons.collections4.QueueUtils;
 import org.apache.commons.lang.SerializationUtils;
 import org.dcm4che2.data.*;
 import org.dcm4che2.io.DicomInputHandler;
@@ -9,7 +10,8 @@ import org.dcm4che2.io.StopTagInputHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.FrameIterator;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 import pt.ua.imodec.util.validators.EncodeabilityValidator;
 import pt.ua.imodec.util.validators.OSValidator;
 
@@ -69,8 +71,33 @@ public class DicomUtils {
         return dicomInputStream.readDicomObject();
     }
 
+    public static boolean isMultiFrame(File dicomFile) throws IOException {
+        try (DicomInputStream dicomInputStream = new DicomInputStream(dicomFile)) {
+            try {
+                DicomObject dicomObject = dicomInputStream.readDicomObject();
+                return isMultiFrame(dicomObject);
+            } catch (OutOfMemoryError ignored) {
+                DicomInputStream dicomInputStream2 = new DicomInputStream(dicomFile);
+                dicomInputStream2.setHandler(new StopTagInputHandler(Tag.PixelData));
+                DicomObject dicomObject = dicomInputStream2.readDicomObject();
+
+                boolean hasMultipleFrames = dicomObject.getInt(Tag.NumberOfFrames) > 1;
+                dicomInputStream2.close();
+                return hasMultipleFrames;
+            }
+        }
+    }
+
     public static boolean isMultiFrame(DicomObject dicomObject) {
-        return dicomObject.contains(Tag.NumberOfFrames) && dicomObject.getInt(Tag.NumberOfFrames) > 1;
+
+        boolean areThereMultipleNumberOfFrames = dicomObject.contains(Tag.NumberOfFrames) && dicomObject.getInt(Tag.NumberOfFrames) > 1;
+        boolean isVrSq = dicomObject.get(Tag.PixelData).vr().equals(VR.SQ);
+        boolean areThereMultiplePixelDataItems = dicomObject.get(Tag.PixelData).countItems() > 1;
+
+        if (!(areThereMultipleNumberOfFrames == areThereMultiplePixelDataItems == isVrSq))
+            logger.warn("This is an inconsistent dicom object regarding the frames!");
+
+        return areThereMultipleNumberOfFrames || isVrSq || areThereMultiplePixelDataItems;
     }
 
     static BufferedImage loadDicomEncodedFrame(DicomInputStream inputStream, int frameID, NewFormat newFormat) throws IOException {
@@ -163,6 +190,10 @@ public class DicomUtils {
 
         int frameCounter = 0;
 
+        TransferSyntax dicomObjectsTS = TransferSyntax.valueOf(dicomObject.getString(Tag.TransferSyntaxUID));
+
+        Queue<byte[]> codeStreamQueue = new LinkedList<>();
+
         while (frameIterator.hasNext()) {
             BufferedImage frame = frameIterator.next();
 
@@ -175,9 +206,8 @@ public class DicomUtils {
             byte[] codeStream = NewFormatsCodecs.encodePNGFile(framePNG, chosenFormat, options);
             framesSqLength += codeStream.length;
 
+            codeStreamQueue.add(codeStream);
         }
-
-        TransferSyntax dicomObjectsTS = TransferSyntax.valueOf(dicomObject.getString(Tag.TransferSyntaxUID));
 
         ImageUtils.logger.debug("Emptying pixel-data (re-writing with the sum of the length of all frames or -1).");
         DicomElement dicomFramesSequence;
@@ -186,15 +216,17 @@ public class DicomUtils {
         else
             dicomFramesSequence = dicomObject.putSequence(Tag.PixelData);
 
+        BasicDicomObject pixelDataItem = new BasicDicomObject();
+
         ImageUtils.logger.debug("Inserting the encoded frames onto the pixel data sequence");
-        BasicDicomObject sequenceDicomObject = new BasicDicomObject();
-        for (File encodedFrame : Objects.requireNonNull(imageDir.listFiles(file -> file.getName().endsWith(".png")))) {
-            byte[] bitstream = Files.readAllBytes(encodedFrame.toPath());
-            sequenceDicomObject.putBytes(Tag.Item, VR.OB, bitstream);
+
+        while (!codeStreamQueue.isEmpty()) {
+            pixelDataItem.putBytes(Tag.Item, VR.OB, codeStreamQueue.poll());
+            dicomFramesSequence.addDicomObject(pixelDataItem);
+            pixelDataItem = new BasicDicomObject();
         }
         if (!dicomObjectsTS.explicitVR())
-            sequenceDicomObject.putNull(Tag.SequenceDelimitationItem, VR.OB);
-        dicomFramesSequence.addDicomObject(sequenceDicomObject);
+            pixelDataItem.putNull(Tag.SequenceDelimitationItem, VR.OB);
 
         ImageUtils.logger.debug("Changing parameters other than pixel-data (lossy compression, transfer syntax, ...)");
         int compressedPixelDataSequenceSizeInBytes = framesSqLength;
@@ -225,7 +257,11 @@ public class DicomUtils {
                     String.format("Unsupported OS: '%s' for Imodec storage plugin", System.getProperty("os.name"))
             );
 
-        int rawImageByteSize = dicomObject.getBytes(Tag.PixelData).length;
+        int rawImageByteSize = dicomObject.get(Tag.PixelData).length();
+        if (rawImageByteSize == -1) {
+            logger.error("Invalid pixel data for a single frame dicom object!");
+            throw new IllegalArgumentException();
+        }
 
         // Change dicom object from uncompressed to JPEG XL, WebP or AVIF format
         BufferedImage dicomImage = ImageUtils.loadDicomImage(dicomObject, 0);
@@ -244,6 +280,12 @@ public class DicomUtils {
         updateLossyAttributes(dicomObject, chosenFormat, rawImageByteSize, compressedImageByteSize);
     }
 
+    /**
+     * Encodes the dicom object with each format specified in datastructs.formats.NewFormats
+     *
+     * @param dicomObject Source data
+     * @return Iterator with each encoded form
+     */
     public static Iterator<DicomObject> encodeIteratorDicomObjectWithAllTs(DicomObject dicomObject) {
         if (dicomObject.contains(Tag.LossyImageCompression)
                 && dicomObject.getString(Tag.LossyImageCompression).equals("01"))
@@ -297,7 +339,10 @@ public class DicomUtils {
                     DicomObject dicomObject = dicomInputStream.readDicomObject();  // FIXME: 20/09/22 OOM Hazard
                     dicomInputStream.close();
 
-                    encodeMultiFrameDicomObject(dicomObject, newFormatIterator.next(), new HashMap<>());
+                    if (isMultiFrame(dicomObject))
+                        encodeMultiFrameDicomObject(dicomObject, newFormatIterator.next(), new HashMap<>());
+                    else
+                        encodeSingleFrameDicomObject(dicomObject, newFormatIterator.next(), new HashMap<>());
                     File file1 = writeDicomObjectToTmpFile(dicomObject);
                     return new DicomInputStream(file1);
                 } catch (IOException e) {

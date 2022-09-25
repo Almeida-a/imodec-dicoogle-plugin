@@ -11,9 +11,9 @@ import pt.ua.dicoogle.sdk.core.DicooglePlatformInterface;
 import pt.ua.dicoogle.sdk.core.PlatformCommunicatorInterface;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
 import pt.ua.imodec.util.*;
-import pt.ua.imodec.util.formats.Format;
-import pt.ua.imodec.util.formats.Native;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.Format;
+import pt.ua.imodec.datastructs.formats.Native;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
