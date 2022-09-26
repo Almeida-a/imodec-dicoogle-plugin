@@ -66,7 +66,7 @@ public class MiscUtils {
             }
         }
     }
-
+    
     /**
      *
      * @param formatId The format in its file extension form

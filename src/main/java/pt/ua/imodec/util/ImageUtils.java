@@ -38,7 +38,7 @@ public class ImageUtils {
 
         return DicomUtils.loadDicomImage(dicomInputStream, frame);
     }
-
+    
     /**
      * Loads the frames with an iterator
      *

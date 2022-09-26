@@ -203,7 +203,6 @@ public class DicomUtils {
             ImageUtils.logger.debug("Adding frame bitstream into pixel data");
             byte[] codeStream = NewFormatsCodecs.encodePNGFile(framePNG, chosenFormat, options);
             framesSqLength += codeStream.length;
-
             codeStreamQueue.add(codeStream);
         }
 

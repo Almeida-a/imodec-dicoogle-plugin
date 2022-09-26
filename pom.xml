@@ -61,6 +61,12 @@
             <version>1.1</version>
             <scope>test</scope>
         </dependency>
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.jiechic.library/Japng &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.jiechic.library</groupId>-->
+<!--            <artifactId>Japng</artifactId>-->
+<!--            <version>0.5.1</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
