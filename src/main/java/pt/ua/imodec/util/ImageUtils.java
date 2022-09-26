@@ -1,8 +1,8 @@
 package pt.ua.imodec.util;
 
-import com.sun.istack.internal.NotNull;
 import org.apache.commons.io.FileUtils;
-import org.dcm4che2.data.*;
+import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class ImageUtils {
      * @return A single frame from the dicom object's pixel data
      * @throws IOException If an IO error occurs
      */
-    public static BufferedImage loadDicomImage(@NotNull DicomObject dicomObject, int frame) throws IOException {
+    public static BufferedImage loadDicomImage(DicomObject dicomObject, int frame) throws IOException {
 
         File tmpDicomFile = DicomUtils.saveDicomFile(dicomObject, true);
 
