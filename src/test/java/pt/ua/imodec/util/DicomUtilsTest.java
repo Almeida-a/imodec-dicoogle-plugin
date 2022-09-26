@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DicomUtilsTest {
 
-    public static final String DICOM_DATASET_DIR = "/home/archy/ic-encoders-eval/images/dataset_dicom/";
-
     /**
      * Overload of isReadable(DicomObject).
      * Also checks if the dicom object can be read from the dicomInputStream without triggering OutOfMemoryError
@@ -132,6 +130,8 @@ class DicomUtilsTest {
     }
 
     private static File tryToFindDatasetDir(String datasetDir) {
+        datasetDir = datasetDir.replace("~", System.getProperty("user.home"));
+
         Path datasetDirPath = Paths.get(datasetDir);
         File datasetDirFile = datasetDirPath.toFile();
         Assumptions.assumeTrue(datasetDirFile.exists() && datasetDirFile.isDirectory());
@@ -149,7 +149,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void saveDicomFile(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -184,7 +184,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void readNonPixelData(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -207,7 +207,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     @Disabled
     void loadDicomEncodedFrame(String datasetDir) {
 
@@ -228,7 +228,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void loadDicomImage(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -269,7 +269,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void encodeSingleFrameDicomObject(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -314,7 +314,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void encodeMultiFrameDicomObject(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir, 2, false, true);
@@ -354,7 +354,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void encodeIteratorDicomObjectWithAllTs(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -400,7 +400,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     @Disabled
     void encodeIteratorDicomInputStreamWithAllTs(String datasetDir) {
 
@@ -449,7 +449,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {DICOM_DATASET_DIR})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void writeDicomObjectToTmpFile(String datasetDir) {
 
         Iterator<File> dicomIterator = getDicomDatasetFiles(datasetDir);
@@ -466,7 +466,7 @@ class DicomUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {DICOM_DATASET_DIR})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void testGetDicomDatasetFiles(String datasetDir) {
 
         byte iterationsLimit = 3;
