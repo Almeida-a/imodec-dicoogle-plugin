@@ -13,7 +13,7 @@
         <project.build.source.encoding>UTF-8</project.build.source.encoding>
 
         <!-- Dependency version definitions -->
-        <dicoogle.version>3.1.0</dicoogle.version>
+        <dicoogle.version>3.0.0</dicoogle.version>
         <jetty.version>9.4.48.v20220622</jetty.version>
         <dcm4che.version>5.27.0</dcm4che.version>
         <snakeyaml.version>1.32</snakeyaml.version>
@@ -64,18 +64,6 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources/webplugin-sample</directory>
-                <targetPath>WebPlugins/webplugin-sample</targetPath>
-                <filtering>false</filtering>
-                <includes>
-                    <include>package.json</include>
-                    <include>module.js</include>
-                </includes>
-            </resource>
-        </resources>
-
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -133,7 +121,7 @@
             <id>mi</id>
             <url>https://bioinformatics.ua.pt/maven/content/repositories/mi</url>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
 
@@ -145,5 +133,4 @@
             </snapshots>
         </repository>
     </repositories>
-
 </project>
