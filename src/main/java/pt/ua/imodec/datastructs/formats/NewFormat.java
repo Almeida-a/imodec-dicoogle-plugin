@@ -1,4 +1,4 @@
-package pt.ua.imodec.util.formats;
+package pt.ua.imodec.datastructs.formats;
 
 import org.dcm4che2.data.TransferSyntax;
 import pt.ua.imodec.util.MiscUtils;

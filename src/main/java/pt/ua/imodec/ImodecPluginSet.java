@@ -10,9 +10,9 @@ import pt.ua.dicoogle.sdk.PluginSet;
 import pt.ua.dicoogle.sdk.StorageInterface;
 import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.storage.ImodecStoragePlugin;
-import pt.ua.imodec.util.formats.Format;
-import pt.ua.imodec.util.formats.Native;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.Format;
+import pt.ua.imodec.datastructs.formats.Native;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 import pt.ua.imodec.webservice.ImodecJettyPlugin;
 
 import java.nio.file.Path;
