@@ -141,7 +141,7 @@ class MiscUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"~/ic-encoders-eval/images/dataset-dicom"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void cloneInputStream(String datasetDir) {
         Iterator<File> filesDataset = DicomUtilsTest.getDicomDatasetFiles(datasetDir);
 
@@ -152,7 +152,12 @@ class MiscUtilsTest {
             InputStream inputStream2 = assertDoesNotThrow(() -> FileUtils.openInputStream(file));
             InputStream inputStream3 = assertDoesNotThrow(() -> MiscUtils.cloneInputStream(inputStream1));
 
-            assertEquals(inputStream2, inputStream3);
+            byte[] data2 = new byte[assertDoesNotThrow(inputStream2::available)];
+            assertDoesNotThrow(() -> inputStream2.read(data2));
+            byte[] data3 = new byte[assertDoesNotThrow(inputStream3::available)];
+            assertDoesNotThrow(() -> inputStream3.read(data3));
+
+            assertArrayEquals(data2, data3);
 
             assertDoesNotThrow(inputStream1::close);
             assertDoesNotThrow(inputStream2::close);

@@ -52,7 +52,7 @@ class ImageUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void loadDicomImage(String datasetDir) {
         Iterator<File> dicomIterator = DicomUtilsTest.getDicomDatasetFiles(datasetDir);
 
@@ -83,7 +83,7 @@ class ImageUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/home/archy/ic-encoders-eval/images/dataset_dicom/"})
+    @ValueSource(strings = {TestCommons.DICOM_DATASET_DIR})
     void loadDicomImageIterator(String datasetDir) {
 
         Iterator<File> dicomIterator = DicomUtilsTest.getDicomDatasetFiles(datasetDir);
