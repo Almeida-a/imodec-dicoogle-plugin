@@ -1,6 +1,5 @@
 package pt.ua.imodec.util;
 
-import org.apache.commons.collections4.QueueUtils;
 import org.apache.commons.lang.SerializationUtils;
 import org.dcm4che2.data.*;
 import org.dcm4che2.io.DicomInputHandler;
@@ -22,7 +21,6 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.rmi.UnexpectedException;
 import java.util.*;
 

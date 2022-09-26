@@ -1,8 +1,11 @@
 package pt.ua.imodec.util;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import pt.ua.imodec.datastructs.formats.NewFormat;
+import pt.ua.imodec.util.validators.CodecsInstalledValidator;
+import pt.ua.imodec.util.validators.OSValidator;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -29,8 +32,15 @@ class NewFormatsCodecsTest {
         testsDirFile.deleteOnExit();
     }
 
+    @BeforeAll
+    static void checkCodecsAvailability() {
+        Assumptions.assumeTrue(CodecsInstalledValidator.validate());
+        Assumptions.assumeTrue(OSValidator.validate());
+    }
+
     @Test
     void encodeDecode() {
+
         byte numberOfImages = 4;
         Iterator<BufferedImage> imageIterator = GifSequenceWriterTest.getMockImagesIterator(numberOfImages);
 

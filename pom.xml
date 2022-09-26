@@ -13,7 +13,7 @@
         <project.build.source.encoding>UTF-8</project.build.source.encoding>
 
         <!-- Dependency version definitions -->
-        <dicoogle.version>3.1.0</dicoogle.version>
+        <dicoogle.version>3.0.0</dicoogle.version>
         <jetty.version>9.4.48.v20220622</jetty.version>
         <dcm4che.version>5.27.0</dcm4che.version>
         <snakeyaml.version>1.32</snakeyaml.version>
@@ -25,7 +25,6 @@
             <groupId>pt.ua.ieeta</groupId>
             <artifactId>dicoogle-sdk</artifactId>
             <version>${dicoogle.version}</version>
-            <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-rewrite -->
         <dependency>
@@ -51,19 +50,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>4.8.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>dcm4che</groupId>
             <artifactId>dcm4che-imageio</artifactId>
             <version>2.0.29</version>
@@ -78,9 +64,6 @@
     </dependencies>
 
     <build>
-        <resources>
-        </resources>
-
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -150,5 +133,4 @@
             </snapshots>
         </repository>
     </repositories>
-
 </project>
