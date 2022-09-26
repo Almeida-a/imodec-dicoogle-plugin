@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <project.build.source.encoding>UTF-8</project.build.source.encoding>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Dependency version definitions -->
         <dicoogle.version>3.0.0</dicoogle.version>
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
+            <version>5.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
