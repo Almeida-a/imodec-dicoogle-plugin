@@ -65,6 +65,15 @@
 
     <build>
         <resources>
+            <resource>
+                <directory>src/main/resources/webplugin-sample</directory>
+                <targetPath>WebPlugins/webplugin-sample</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>package.json</include>
+                    <include>module.js</include>
+                </includes>
+            </resource>
         </resources>
 
         <plugins>
