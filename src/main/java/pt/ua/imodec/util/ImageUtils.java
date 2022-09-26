@@ -1,14 +1,15 @@
 package pt.ua.imodec.util;
 
 import org.apache.commons.io.FileUtils;
-import org.dcm4che2.data.*;
+import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.formats.Format;
-import pt.ua.imodec.util.formats.Native;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.Format;
+import pt.ua.imodec.datastructs.formats.Native;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -22,6 +23,13 @@ public class ImageUtils {
 
     public static final Logger logger = LoggerFactory.getLogger(ImageUtils.class);
 
+    /**
+     *
+     * @param dicomObject Dicom data source
+     * @param frame ID of the frame in the dicom object
+     * @return A single frame from the dicom object's pixel data
+     * @throws IOException If an IO error occurs
+     */
     public static BufferedImage loadDicomImage(DicomObject dicomObject, int frame) throws IOException {
 
         File tmpDicomFile = DicomUtils.saveDicomFile(dicomObject, true);
@@ -30,7 +38,14 @@ public class ImageUtils {
 
         return DicomUtils.loadDicomImage(dicomInputStream, frame);
     }
-
+    
+    /**
+     * Loads the frames with an iterator
+     *
+     * @param dicomInputStream Dicom file data source
+     * @return An iterator containing a frame in each iteration
+     * @throws IOException If an IO error occurs
+     */
     public static Iterator<BufferedImage> loadDicomImageIterator(DicomInputStream dicomInputStream) throws IOException {
 
         File file = new File(ImodecPluginSet.TMP_DIR_PATH + "/loadIteratorTmp.dcm");

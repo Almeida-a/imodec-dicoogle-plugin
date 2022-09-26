@@ -3,7 +3,7 @@ package pt.ua.imodec.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.ua.imodec.ImodecPluginSet;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

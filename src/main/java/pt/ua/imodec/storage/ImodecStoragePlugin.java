@@ -12,9 +12,9 @@ import pt.ua.dicoogle.sdk.settings.ConfigurationHolder;
 import pt.ua.imodec.ImodecPluginSet;
 import pt.ua.imodec.util.DicomUtils;
 import pt.ua.imodec.util.MiscUtils;
-import pt.ua.imodec.util.formats.Format;
-import pt.ua.imodec.util.formats.Native;
-import pt.ua.imodec.util.formats.NewFormat;
+import pt.ua.imodec.datastructs.formats.Format;
+import pt.ua.imodec.datastructs.formats.Native;
+import pt.ua.imodec.datastructs.formats.NewFormat;
 
 import java.io.*;
 import java.net.URI;

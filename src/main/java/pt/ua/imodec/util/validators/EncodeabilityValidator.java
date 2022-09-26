@@ -2,12 +2,19 @@ package pt.ua.imodec.util.validators;
 
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
+import org.dcm4che2.io.DicomInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class EncodeabilityValidator implements Validator {
 
     private static final Logger logger = LoggerFactory.getLogger(EncodeabilityValidator.class);
+
+    public static boolean validate(DicomInputStream dicomInputStream) throws IOException {
+        return validate(dicomInputStream.readDicomObject());
+    }
 
     public static boolean validate(DicomObject dicomObject) {
         if (dicomObject.contains(Tag.LossyImageCompression)
